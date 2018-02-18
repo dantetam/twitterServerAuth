@@ -2,8 +2,8 @@
   "name": "authenticationIntro",
   "version": "1.0.0",
   "main": "index.js",
-  "repository": "https://github.com/DDCSLearning/authenticationIntro.git",
-  "author": "DanielDeutsch <deudan1010@gmail.com>",
+  "repository": "",
+  "author": "",
   "license": "none",
   "scripts": {
     "start": "node app",
@@ -15,7 +15,9 @@
     "connect-mongo": "^1.3.2",
     "express": "^4.16.2",
     "express-session": "^1.15.6",
+    "jade": "^1.11.0",
     "mongoose": "^4.13.11",
-    "nodemon": "^1.11.0"
+    "nodemon": "^1.11.0",
+    "pug": "^2.0.0-rc.4"
   }
 }

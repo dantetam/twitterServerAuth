@@ -17,10 +17,6 @@ var UserSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-  },
-  passwordConf: {
-    type: String,
-    required: true,
   }
 });
 
@@ -60,4 +56,3 @@ UserSchema.pre('save', function (next) {
 
 var User = mongoose.model('User', UserSchema);
 module.exports = User;
-
