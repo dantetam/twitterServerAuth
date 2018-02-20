@@ -40,8 +40,10 @@ app.use(express.static(__dirname + '/templateLogReg'));
 // include routes
 var routes = require('./routes/router');
 var twitterRoutes = require('./routes/twitter/twitter');
+var twitterDataAnalysisRoute = require('./routes/twitter/twitterData');
 app.use('/', routes);
 app.use('/twitter', twitterRoutes);
+app.use('/twitterData', twitterDataAnalysisRoute);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

@@ -1,17 +1,15 @@
 var express = require('express');
 var async = require('async');
 var router = express.Router();
-
+var Repeat = require("repeat");
 var request = require("request");
+
 var authKeys = require('./twitter_auth.json');
 var twitterAnalysis = require('./twitter_analysis.js');
 
 var Tweet = require("../../models/tweet");
 
-var Repeat = require("repeat");
-
 /*
-TODO:
 Fix and modularize these callbacks so they form a neat queue and final callback to render the website
 */
 
@@ -187,6 +185,15 @@ function storeTweetsInData(tweetsJson, next) {
     });
   }
 }
+
+router.get("/randomSample", function(req, res, next) {
+  res.send("Here is a collection of random tweets sampled from the database.");
+  // Get random data using mongooseRandom query library
+  Tweet.findRandom().limit(25).exec(function (err, tweets) {
+    console.log(tweets);
+    //res.send(tweets);
+  });
+});
 
 /* This callback happens when the user creates the requests
 GET /twittertest/:topic

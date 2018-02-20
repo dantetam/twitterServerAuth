@@ -1,5 +1,5 @@
 var mongoose = require('mongoose');
-var bcrypt = require('bcrypt');
+var mongooseRandom = require('mongoose-random');
 
 /**
 A MongoDB schema used to represent tweet data
@@ -27,6 +27,9 @@ var TweetSchema = new mongoose.Schema({
     required: true
   }
 });
+
+TweetSchema.plugin(mongooseRandom, { path: 'r' }); // by default `path` is `random`. It's used internally to store a random value on each doc.
+
 
 /*
 TweetSchema.statics.test = function() {};
