@@ -27,10 +27,13 @@ function queryData() {
     function(next) {
       connectToTweetData(next);
     },
-    function(db, next) {
-      var searchResults = db.getCollection("tweets").find({'text':/Trump/i});
-      console.log(searchResults);
-      next(null);
+    function(dbase, next) {
+      var searchResultsCursor = dbase.collection("tweets").find({'text':/Trump/i}).toArray(function(err, result) {
+        if (err) throw err;
+        console.log(result);
+        dbase.close();
+        next(null);
+      });
     }
   ], function(err) {
     if (err) {
