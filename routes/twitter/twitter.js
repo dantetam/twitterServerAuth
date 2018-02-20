@@ -18,7 +18,7 @@ Fix and modularize these callbacks so they form a neat queue and final callback 
 Read API keys from the hidden file, generate a bearer token from Twitter's OAuth endpoint,
 and then start another callback.
 */
-function findBearerToken(res, userTopic, next) {
+function findBearerToken(userTopic, next) {
   if (userTopic !== process.env.CURRENT_TOPIC) return; //Do not continue old repeating requests
 
   var key = authKeys.consumer_key;
@@ -39,14 +39,14 @@ function findBearerToken(res, userTopic, next) {
     body: "grant_type=client_credentials"
   }, function(err, resp, body) {
     //console.log(body["access_token"]);
-    getTweets(res, body["access_token"], userTopic, next);
+    getTweets(body["access_token"], userTopic, next);
   });
 }
 
 /*
 Use the previously found bearer token to OAuth into Twitter's tweet search API,
 */
-function getTweets(res, bearerToken, userTopic, next) {
+function getTweets(bearerToken, userTopic, next) {
   var url = 'https://api.twitter.com/1.1/search/tweets.json';
   request({
     url: url + "?q=" + userTopic + "&count=50&lang=en&result_type=mixed",
@@ -63,11 +63,13 @@ function getTweets(res, bearerToken, userTopic, next) {
 
     wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
 
+    /*
     res.render('twitter', { //Only render the website when we are finished writing to it
       title: 'Twitter Feed',
       topic: userTopic,
       tweets: tweetStrings
     });
+    */
   });
 }
 
@@ -88,7 +90,7 @@ function parseTweets(tweetsJson) {
 Use the application-only OAuth token to find popular Twitter topics
 */
 
-function getTopics(res, bearerToken) {
+function getTopics(bearerToken) {
   var url = 'https://api.twitter.com/1.1/trends/available.json';
   request({
     url: url,
@@ -123,10 +125,8 @@ function storeTweetsInData(tweetsJson, next) {
       creationTime: new Date(status["created_at"])
     }
 
-    Tweet.create(tweetData, function (error, user) {
+    Tweet.create(tweetData, function (error, tweet) {
       if (error) {
-        console.log(error);
-        if (next) return next(error);
         return null;
       }
     });
@@ -139,13 +139,18 @@ where :topic is a kind of "wildcard"
 i.e. it catches /twittertest/California
  */
 router.get('/:topic', function(req, res, next) {
-  var userTopic = req.params["topic"];
-  if (userTopic === process.env.CURRENT_TOPIC) return;
+  var userTopic = req.params["topic"] || process.env.CURRENT_TOPIC;
+  if (userTopic === process.env.CURRENT_TOPIC) {
+    res.send("The server is active and still processing the same Twitter topic request: " + userTopic);
+  };
   process.env.CURRENT_TOPIC = userTopic;
 
+  //Only start a new queue of repeating requests when the topic changes
   Repeat(function() {
-    findBearerToken(res, process.env.CURRENT_TOPIC, next);
-  }).every(1000 * 60 * 10, 'ms').start.now();
+    findBearerToken(process.env.CURRENT_TOPIC, next);
+  }).every(1000 * 60 * 5, 'ms').start.now();
+
+  res.send("The server is now processing the Twitter topic: " + userTopic);
 });
 
 /*
