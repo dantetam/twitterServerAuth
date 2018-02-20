@@ -20,7 +20,7 @@ Read API keys from the hidden file, generate a bearer token from Twitter's OAuth
 and then start another callback.
 */
 function findBearerToken(userTopic, next) {
-  if (userTopic !== process.env.CURRENT_TOPIC) return; //Do not continue old repeating requests
+  if (userTopic !== null && userTopic !== process.env.CURRENT_TOPIC) return; //Do not continue old repeating requests
 
   var key = authKeys.consumer_key;
   var secret = authKeys.consumer_secret;
@@ -89,8 +89,7 @@ function getTopics(bearerToken, next) {
     },
     json: true
   }, function(err, jsonResponse, body) {
-    topicStrings = parseTopics(body);
-    if (next) next(null, topicStrings);
+    if (next) next(null, err, jsonResponse, body, bearerToken);
   });
 }
 
@@ -104,15 +103,51 @@ function parseTopics(topicsJson) {
   return results;
 }
 
+/**
+Set up a correct 'async' queue of the following Twitter API actions:
+find bearer token; get tweets relating to topic;
+perform calculations on text data and send raw tweets to MongoDB database;
+and a last callback at the end.
+*/
 function getTweetsWithChosenTopic(topic) {
   async.waterfall([
     function(next) {
-      findBearerToken(topic, next);
+      findBearerToken(topic, next); //Pass in no topic set to the website
+      //i.e. find a bearer token without checking for a duplicate topic
     },
     function(err, resp, body, next) {
       var bearerToken = body["access_token"];
-      //getTopics(bearerToken);
       getTweets(bearerToken, topic, next);
+    },
+    function(err, resp, body, next) {
+      var tweetStrings = parseTweets(body);
+      storeTweetsInData(body, next);
+      var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
+      next(null, wordCounts);
+    }
+  ], function(err, result) {
+    if (err) {
+      console.log(err);
+    }
+    console.log("Word Counts: ");
+    console.log(result);
+  });
+}
+
+function getTweetsWithTrendingTopic() {
+  async.waterfall([
+    function(next) {
+      findBearerToken(null, next);
+    },
+    function(err, resp, body, next) {
+      var bearerToken = body["access_token"];
+      getTopics(bearerToken, next);
+    },
+    function(err, resp, body, bearerToken, next) {
+      var topicStrings = parseTopics(body);
+      var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
+      console.log("Chose trending topic (US): " + randomTopic);
+      getTweets(bearerToken, randomTopic, next);
     },
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
@@ -127,10 +162,6 @@ function getTweetsWithChosenTopic(topic) {
     console.log("Word Counts: ");
     console.log(result);
   });
-}
-
-function getTweetsWithTrendingTopic(bearerToken) {
-
 }
 
 /*
@@ -172,7 +203,7 @@ router.get('/:topic', function(req, res, next) {
   //Only start a new queue of repeating requests when the topic changes
   Repeat(function() {
     getTweetsWithChosenTopic(process.env.CURRENT_TOPIC);
-  }).every(1000 * 60 * 5, 'ms').start.now();
+  }).every(1000 * 60 * 1, 'ms').start.now();
 
   res.send("The server is now processing the Twitter topic: " + userTopic);
 });
@@ -181,11 +212,18 @@ router.get('/:topic', function(req, res, next) {
 Handle no topic given in the URL params
 */
 router.get('/', function(req, res, next) {
+  /*
   res.render('twitter', { //Only render the website when we are finished writing to it
     title: 'Twitter Feed',
     topic: 'N/A',
     tweets: ['No tweets yet. Input a topic such as /twitter/California']
   });
+  */
+  Repeat(function() {
+    getTweetsWithTrendingTopic();
+  }).every(1000 * 60 * 1, 'ms').start.now();
+
+  res.send("The server is processing a chosen topic.");
 });
 
 module.exports = router;
