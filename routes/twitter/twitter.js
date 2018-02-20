@@ -1,4 +1,5 @@
 var express = require('express');
+var async = require('async');
 var router = express.Router();
 
 var request = require("request");
@@ -38,8 +39,7 @@ function findBearerToken(userTopic, next) {
     json: true,
     body: "grant_type=client_credentials"
   }, function(err, resp, body) {
-    //console.log(body["access_token"]);
-    getTweets(body["access_token"], userTopic, next);
+    if (next) next(null, err, resp, body);
   });
 }
 
@@ -57,19 +57,7 @@ function getTweets(bearerToken, userTopic, next) {
     },
     json: true
   }, function(err, jsonResponse, body) {
-    tweetStrings = parseTweets(body);
-    storeTweetsInData(body, next);
-    //tweetStrings = tweetStrings.join("\n");
-
-    wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
-
-    /*
-    res.render('twitter', { //Only render the website when we are finished writing to it
-      title: 'Twitter Feed',
-      topic: userTopic,
-      tweets: tweetStrings
-    });
-    */
+    if (next) next(null, err, jsonResponse, body);
   });
 }
 
@@ -90,8 +78,8 @@ function parseTweets(tweetsJson) {
 Use the application-only OAuth token to find popular Twitter topics
 */
 
-function getTopics(bearerToken) {
-  var url = 'https://api.twitter.com/1.1/trends/available.json';
+function getTopics(bearerToken, next) {
+  var url = 'https://api.twitter.com/1.1/trends/place.json?id=23424977';
   request({
     url: url,
     method: 'GET',
@@ -102,10 +90,46 @@ function getTopics(bearerToken) {
     json: true
   }, function(err, jsonResponse, body) {
     topicStrings = parseTopics(body);
+    if (next) next(null, topicStrings);
   });
 }
 
 function parseTopics(topicsJson) {
+  if (topicsJson["errors"]) return null;
+  var trends = topicsJson[0]["trends"];
+  var results = [];
+  for (var trend of trends) {
+    results.push(trend["query"]);
+  }
+  return results;
+}
+
+function getTweetsWithChosenTopic(topic) {
+  async.waterfall([
+    function(next) {
+      findBearerToken(topic, next);
+    },
+    function(err, resp, body, next) {
+      var bearerToken = body["access_token"];
+      //getTopics(bearerToken);
+      getTweets(bearerToken, topic, next);
+    },
+    function(err, resp, body, next) {
+      var tweetStrings = parseTweets(body);
+      storeTweetsInData(body, next);
+      var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
+      next(null, wordCounts)
+    }
+  ], function(err, result) {
+    if (err) {
+      console.log(err);
+    }
+    console.log("Word Counts: ");
+    console.log(result);
+  });
+}
+
+function getTweetsWithTrendingTopic(bearerToken) {
 
 }
 
@@ -147,7 +171,7 @@ router.get('/:topic', function(req, res, next) {
 
   //Only start a new queue of repeating requests when the topic changes
   Repeat(function() {
-    findBearerToken(process.env.CURRENT_TOPIC, next);
+    getTweetsWithChosenTopic(process.env.CURRENT_TOPIC);
   }).every(1000 * 60 * 5, 'ms').start.now();
 
   res.send("The server is now processing the Twitter topic: " + userTopic);

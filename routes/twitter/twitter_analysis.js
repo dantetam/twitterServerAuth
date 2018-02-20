@@ -72,9 +72,9 @@ var self = module.exports = {
   and returning a list of words by count.
   */
   getWordCountFromTweets: function(tweetsArr) {
-    doubleArrTokens = self.sanitizeTweets(tweetsArr);
-    tweetsWordCount = self.wordCount(doubleArrTokens);
-    console.log(tweetsWordCount);
+    var doubleArrTokens = self.sanitizeTweets(tweetsArr);
+    var tweetsWordCount = self.wordCount(doubleArrTokens);
+    return tweetsWordCount;
   }
 
 };
