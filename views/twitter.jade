@@ -1,0 +1,35 @@
+// extends layout
+
+block content
+  h1= title
+  link(rel='stylesheet', href='/stylesheets/style.css')
+
+  div(id="wrapper")
+    h4 This is a recent Tweet stream about the topic <b>#{topic}</b>, through the Twitter API.
+    p
+      | Listen to Twitter feed from a topic like &emsp;
+      | #[a(href="./California") California]
+    //p #{tweets}
+
+    //Jade must be evaluated at run time/"compile" time so scripts must be loaded in this order i.e. semi-blocking.
+    script(src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js")
+    script(src="https://d3js.org/d3.v3.min.js")
+
+    div(id="tweetData" style="text-align: left;")
+
+    //<script src="https://d3js.org/d3-random.v1.min.js"></script>
+    //<script src="https://d3js.org/d3-timer.v1.min.js"></script>
+    //<script src="https://d3js.org/d3-array.v1.min.js"></script>
+    //<script src="https://d3js.org/d3-collection.v1.min.js"></script>
+
+    script.
+      //Access the Express middleware variable "tweets" passed to the client
+      //Render the tweets array programmatically using d3.js to update the front end with html()
+      var tweets = !{JSON.stringify(tweets)};
+      var tweetHtml = "";
+      for (var i = 0; i < tweets.length; i++) {
+        var tweet = tweets[i];
+        //console.log(tweet);
+        tweetHtml += "<p>" + tweet + "</p>"
+      }
+      d3.select("#tweetData").html(d3.select("#tweetData").html() + tweetHtml);

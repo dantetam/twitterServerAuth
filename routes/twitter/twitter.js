@@ -16,7 +16,7 @@ Fix and modularize these callbacks so they form a neat queue and final callback 
 Read API keys from the hidden file, generate a bearer token from Twitter's OAuth endpoint,
 and then start another callback.
 */
-function findBearerToken(res, userTopic) {
+function findBearerToken(res, userTopic, next) {
   var key = authKeys.consumer_key;
   var secret = authKeys.consumer_secret;
   var cat = key + ":" + secret;
@@ -35,14 +35,14 @@ function findBearerToken(res, userTopic) {
     body: "grant_type=client_credentials"
   }, function(err, resp, body) {
     //console.log(body["access_token"]);
-    getTweets(res, body["access_token"], userTopic);
+    getTweets(res, body["access_token"], userTopic, next);
   });
 }
 
 /*
 Use the previously found bearer token to OAuth into Twitter's tweet search API,
 */
-function getTweets(res, bearerToken, userTopic) {
+function getTweets(res, bearerToken, userTopic, next) {
   var url = 'https://api.twitter.com/1.1/search/tweets.json';
   request({
     url: url + "?q=" + userTopic + "&count=50&lang=en&result_type=mixed",
@@ -54,7 +54,7 @@ function getTweets(res, bearerToken, userTopic) {
     json: true
   }, function(err, jsonResponse, body) {
     tweetStrings = parseTweets(body);
-    storeTweetsInData(body);
+    storeTweetsInData(body, next);
     //tweetStrings = tweetStrings.join("\n");
 
     wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
@@ -106,7 +106,7 @@ function parseTopics(topicsJson) {
 /*
 Take the JSON data of the retrieved tweets and store them into the MongoDB database
 */
-function storeTweetsInData(tweetsJson) {
+function storeTweetsInData(tweetsJson, next) {
   var results = [];
   var statuses = tweetsJson["statuses"];
   for (var i = 0; i < statuses.length; i++) {
@@ -121,7 +121,9 @@ function storeTweetsInData(tweetsJson) {
 
     Tweet.create(tweetData, function (error, user) {
       if (error) {
-        return next(error);
+        console.log(error);
+        if (next) return next(error);
+        return null;
       }
     });
   }
@@ -132,15 +134,15 @@ GET /twittertest/:topic
 where :topic is a kind of "wildcard"
 i.e. it catches /twittertest/California
  */
-router.get('/:topic', function(req, res) {
+router.get('/:topic', function(req, res, next) {
   userTopic = req.params["topic"];
-  findBearerToken(res, userTopic);
+  findBearerToken(res, userTopic, next);
 });
 
 /*
 Handle no topic given in the URL params
 */
-router.get('/', function(req, res) {
+router.get('/', function(req, res, next) {
   res.render('twitter', { //Only render the website when we are finished writing to it
     title: 'Twitter Feed',
     topic: 'N/A',
