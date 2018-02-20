@@ -7,6 +7,8 @@ var twitterAnalysis = require('./twitter_analysis.js');
 
 var Tweet = require("../../models/tweet");
 
+var Repeat = require("repeat");
+
 /*
 TODO:
 Fix and modularize these callbacks so they form a neat queue and final callback to render the website
@@ -17,6 +19,8 @@ Read API keys from the hidden file, generate a bearer token from Twitter's OAuth
 and then start another callback.
 */
 function findBearerToken(res, userTopic, next) {
+  if (userTopic !== process.env.CURRENT_TOPIC) return; //Do not continue old repeating requests
+
   var key = authKeys.consumer_key;
   var secret = authKeys.consumer_secret;
   var cat = key + ":" + secret;
@@ -135,8 +139,13 @@ where :topic is a kind of "wildcard"
 i.e. it catches /twittertest/California
  */
 router.get('/:topic', function(req, res, next) {
-  userTopic = req.params["topic"];
-  findBearerToken(res, userTopic, next);
+  var userTopic = req.params["topic"];
+  if (userTopic === process.env.CURRENT_TOPIC) return;
+  process.env.CURRENT_TOPIC = userTopic;
+
+  Repeat(function() {
+    findBearerToken(res, process.env.CURRENT_TOPIC, next);
+  }).every(1000 * 60 * 10, 'ms').start.now();
 });
 
 /*
