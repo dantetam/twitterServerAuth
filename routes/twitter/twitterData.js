@@ -2,12 +2,8 @@ var express = require('express');
 var async = require('async');
 var router = express.Router();
 
-var mongoose = require('mongoose');
-var session = require('express-session');
-var MongoStore = require('connect-mongo')(session);
 var MongoClient = require('mongodb').MongoClient;
 
-var authKeys = require('./twitter_auth.json');
 var twitterAnalysis = require('./twitter_analysis.js');
 
 var Tweet = require("../../models/tweet");
@@ -15,10 +11,11 @@ var Tweet = require("../../models/tweet");
 function connectToTweetData(next) {
   //connect to MongoDB, initiate callback onConnection, using new mongoDB 3.0 client syntax
   var url = "mongodb://localhost:27017/";
-  MongoClient.connect(url, function(err, db) {   //here db is the client obj
+  MongoClient.connect(url, function(err, client) {   //Return the mongoDB client obj
+    //The client object encompasses the whole database
     if (err) throw err;
     var dbase = db.db("testForAuth");
-    next(null, dbase);
+    next(null, client, dbase);
   });
 }
 
@@ -27,15 +24,16 @@ function queryData() {
     function(next) {
       connectToTweetData(next);
     },
-    function(dbase, next) {
-      var searchResultsCursor = dbase.collection("tweets").find({'text':/Trump/i}).toArray(function(err, result) {
+    function(client, dbase, next) {
+      var regexQuery = {'text': /Trump/i};
+      var dataInclude = {author: 1, text: 1, creationTime: 1};
+      dbase.collection("tweets").find(regexQuery, dataInclude).toArray(function(err, result) {
         if (err) throw err;
-        console.log(result);
-        dbase.close();
-        next(null);
+        client.close();
+        next(null, result);
       });
     }
-  ], function(err) {
+  ], function(err, result) {
     if (err) {
       console.log(err);
     }

@@ -127,8 +127,8 @@ function getTweetsWithChosenTopic(topic) {
     if (err) {
       console.log(err);
     }
-    console.log("Word Counts: ");
-    console.log(result);
+    //console.log("Word Counts: ");
+    //console.log(result);
   });
 }
 
@@ -157,8 +157,8 @@ function getTweetsWithTrendingTopic() {
     if (err) {
       console.log(err);
     }
-    console.log("Word Counts: ");
-    console.log(result);
+    //console.log("Word Counts: ");
+    //console.log(result);
   });
 }
 
