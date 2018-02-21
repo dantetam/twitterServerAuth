@@ -8,6 +8,11 @@ router.get('/', function (req, res, next) {
   return res.sendFile(path.join(__dirname + '/templateLogReg/index.html'));
 });
 
+// GET route for login screen
+router.get('/login', function (req, res, next) {
+  return res.sendFile(path.join(__dirname + '/templateLogReg/login.html'));
+});
+
 
 //POST route for updating data
 router.post('/', function (req, res, next) {

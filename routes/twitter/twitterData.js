@@ -14,18 +14,18 @@ function connectToTweetData(next) {
   MongoClient.connect(url, function(err, client) {   //Return the mongoDB client obj
     //The client object encompasses the whole database
     if (err) throw err;
-    var dbase = db.db("testForAuth");
+    var dbase = client.db("testForAuth");
     next(null, client, dbase);
   });
 }
 
-function queryData() {
+function queryData(queryString, response) {
   async.waterfall([
     function(next) {
       connectToTweetData(next);
     },
     function(client, dbase, next) {
-      var regexQuery = {'text': /Trump/i};
+      var regexQuery = {'text': new RegExp(queryString)};
       var dataInclude = {author: 1, text: 1, creationTime: 1};
       dbase.collection("tweets").find(regexQuery, dataInclude).toArray(function(err, result) {
         if (err) throw err;
@@ -37,17 +37,27 @@ function queryData() {
     if (err) {
       console.log(err);
     }
+    response.send(result);
   });
 }
 
+/*
+Search for certain tweets in the topic parameter
+i.e. /twitterData/United_States
+*/
+router.get('/:topic', function(req, res, next) {
+  var userTopic = req.params["topic"]
+  queryData(userTopic, res);
+  //res.send("Twitter data test query custom: " + userTopic);
+});
 
 /*
 Handle no topic given in the URL params
 i.e. /twitterData
 */
 router.get('/', function(req, res, next) {
-  queryData();
-  res.send("Twitter data test query");
+  queryData("Trump", res);
+  //res.send("Twitter data test query");
 });
 
 module.exports = router;
