@@ -8,29 +8,9 @@ var self = module.exports = {
     return stringValue.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1");
   },
 
-  /*
-  Takes in a string tweet, which may contain bad characters/misformed words,
-  and returns a lower case version, in an array of tokens.
+  /**
+  Return a dictionary where dict[word] === true if word is a stop word.
   */
-  sanitizeTweet: function(tweet) {
-    //Capture all hashtag regex patterns, which returns two groups for each full match:
-    //the hashtag symbol, which is discarded; and the hashtag topic, which is divided into words since it is usually camelCase
-    var tweetSplitHashtags = tweet.replace(/(\#)([a-zA-Z]+)/g, function(match, group1, group2, index, original) {
-      return self.camelCaseSeparate(group2);
-    });
-
-    //Once hashtags are processed, remove all non-alphanumeric characters, change to lowercase, and split by whitespace
-    var tokens = tweetSplitHashtags.toLowerCase().replace(/[^a-zA-Z ]/g, "").split(/[ ,]+/);
-    //Go backwards since we are removing elements, arraylist trap
-    for (var i = tokens.length - 1; i >= 0; i--) {
-      var token = tokens[i];
-      if (token.indexOf("...") !== -1 || token.indexOf("https://") !== -1 || token.length == 0) {
-        tokens.splice(i, 1);
-      }
-    }
-    return tokens;
-  },
-
   getStopWords: function() {
     var data = [ "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "as", "at", "be", "because", "been", "before", "being",
     "below", "between", "both", "but", "by", "could", "did", "do", "does", "doing", "down", "during", "each", "few", "for", "from", "further", "had", "has", "have",
@@ -44,6 +24,32 @@ var self = module.exports = {
     for (var word of data) {
       result[word] = true;
     }
+    return result;
+  },
+
+  /*
+  Takes in a string tweet, which may contain bad characters/misformed words,
+  and returns a lower case version, in an array of tokens.
+  */
+  sanitizeTweet: function(tweet) {
+    //Capture all hashtag regex patterns, which returns two groups for each full match:
+    //the hashtag symbol, which is discarded; and the hashtag topic, which is divided into words since it is usually camelCase
+    var tweetSplitHashtags = tweet.replace(/(\#)([a-zA-Z]+)/g, function(match, group1, group2, index, original) {
+      return self.camelCaseSeparate(group2);
+    });
+
+    var stopWordsDict = self.getStopWords();
+
+    //Once hashtags are processed, remove all non-alphanumeric characters, change to lowercase, and split by whitespace
+    var tokens = tweetSplitHashtags.toLowerCase().replace(/[^a-zA-Z ]/g, "").split(/[ ,]+/);
+    //Go backwards since we are removing elements, arraylist trap
+    for (var i = tokens.length - 1; i >= 0; i--) {
+      var token = tokens[i];
+      if (token.indexOf("...") !== -1 || token.indexOf("https://") !== -1 || token.length == 0 || stopWordsDict[token]) {
+        tokens.splice(i, 1);
+      }
+    }
+    return tokens;
   },
 
   removeStopWords: function(doubleArrTokens) {
@@ -69,30 +75,26 @@ var self = module.exports = {
     return results;
   },
 
-  tfidfIndividualMeasure: function(word) {
+  /**
+  Take in a collection of documents and a word to look for,
+  and return the word's importance using the tf-idf metric per document.
+  */
+  tfidfIndividualMeasure: function(texts, word) {
     var tfidf = new natural.TfIdf();
 
-    /*
-    tfidf.addDocument('this document is about node.');
-    tfidf.addDocument('this document is about ruby.');
-    tfidf.addDocument('this document is about ruby and node.');
-    tfidf.addDocument('this document is about node. it has node examples');
+    for (var text of texts) {
+      tfidf.addDocument(text);
+    }
 
-    console.log('node --------------------------------');
-    tfidf.tfidfs('node', function(i, measure) {
-        console.log('document #' + i + ' is ' + measure);
+    console.log("Measuring importance of word: " + word);
+    tfidf.tfidfs(word, function(i, measure) {
+      console.log('document #' + i + ' is ' + measure);
     });
-
-    console.log('ruby --------------------------------');
-    tfidf.tfidfs('ruby', function(i, measure) {
-        console.log('document #' + i + ' is ' + measure);
-    });
-    */
   },
 
 
   /*
-  Takes in an array of an array of tokens, and returns a word count dictionary
+  Takes in an array of an array of tokens, and returns a sorted list of 'dictionary' entries indexed by [word, count]
   */
   wordCount: function(doubleArrTokens, cutoffCountInc = 5) {
     var results = {};
@@ -107,17 +109,22 @@ var self = module.exports = {
         results[token]++;
       }
     }
+    var listSortedResults = [];
     for (var word in results) {
       if (results.hasOwnProperty(word)) {
         if (results[word] < cutoffCountInc) {
-          delete results[word]
+          delete results[word];
+        }
+        else {
+          listSortedResults.push([word, results[word]]);
         }
       }
     }
-    return results;
+    listSortedResults.sort(function(a, b) {
+      return b[1] - a[1]; //Sort by word count in descending order
+    });
+    return listSortedResults;
   },
-
-
 
   /*
   The public facing method for taking in an array of tweet strings, direcrly from the JSON callback,

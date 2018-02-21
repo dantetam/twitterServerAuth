@@ -121,6 +121,7 @@ function getTweetsWithChosenTopic(topic) {
       var tweetStrings = parseTweets(body);
       storeTweetsInData(body, next);
       var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
+      console.log(wordCounts);
       next(null, wordCounts);
     }
   ], function(err, result) {
@@ -145,13 +146,14 @@ function getTweetsWithTrendingTopic() {
       var topicStrings = parseTopics(body);
       var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
       console.log("Chose trending topic (US): " + randomTopic);
+      process.env.CURRENT_TOPIC = randomTopic;
       getTweets(bearerToken, randomTopic, next);
     },
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
       storeTweetsInData(body, next);
       var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
-      next(null, wordCounts)
+      next(null, wordCounts);
     }
   ], function(err, result) {
     if (err) {

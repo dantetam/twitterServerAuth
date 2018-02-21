@@ -27,11 +27,22 @@ function queryData(queryString, response) {
     function(client, dbase, next) {
       var regexQuery = {'text': new RegExp(queryString)};
       var dataInclude = {author: 1, text: 1, creationTime: 1};
+
       dbase.collection("tweets").find(regexQuery, dataInclude).toArray(function(err, result) {
         if (err) throw err;
         client.close();
         next(null, result);
       });
+
+      /*
+      dbase.collection("tweets").find({$where: function() {
+        return this.text.match(queryString) !== null;
+      }}, {}).toArray(function(err, result) {
+        if (err) throw err;
+        client.close();
+        next(null, result);
+      });
+      */
     }
   ], function(err, result) {
     if (err) {

@@ -1,7 +1,35 @@
 var express = require('express');
 var router = express.Router();
 var User = require('../models/user');
+var async = require('async');
 
+var Tweet = require('../models/tweet');
+
+function getServerStatus(next) {
+  Tweet.count({}, function (err, count) {
+    if (err) {}
+    next(null, count);
+  });
+}
+
+function queryServerStatus(res) {
+  async.waterfall([
+    function(next) {
+      getServerStatus(next);
+    }
+  ], function(err, result) {
+    if (err) {
+      console.log(err);
+    }
+    res.send("Tweet data count: " + result);
+    //console.log("Word Counts: ");
+    //console.log(result);
+  });
+}
+
+router.get('/count', function(req, res, next) {
+  queryServerStatus(res);
+});
 
 // GET route for reading data
 router.get('/', function (req, res, next) {
@@ -13,9 +41,8 @@ router.get('/login', function (req, res, next) {
   return res.sendFile(path.join(__dirname + '/templateLogReg/login.html'));
 });
 
-
 //POST route for updating data
-router.post('/', function (req, res, next) {
+router.post('/login', function (req, res, next) {
   // confirm that user typed same password twice
   if (req.body.password !== req.body.passwordConf) {
     var err = new Error('Passwords do not match.');
