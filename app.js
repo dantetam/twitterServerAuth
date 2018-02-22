@@ -10,6 +10,8 @@ var MongoStore = require('connect-mongo')(session);
 mongoose.connect('mongodb://localhost/testForAuth');
 var db = mongoose.connection;
 
+var port = process.env.PORT || 3000; //Choose between production port or default localhosted port (3000)
+
 //handle mongo error
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
@@ -61,6 +63,6 @@ app.use(function (err, req, res, next) {
 
 
 // listen on port 3000
-app.listen(3000, function () {
+app.listen(port, function () {
   console.log('Express app listening on port 3000');
 });
