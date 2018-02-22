@@ -41,13 +41,14 @@ var self = module.exports = {
     var stopWordsDict = self.getStopWords();
 
     //Once hashtags are processed, remove all non-alphanumeric characters, change to lowercase, and split by whitespace
-    var tokens = tweetSplitHashtags.toLowerCase().replace(/[^a-zA-Z ]/g, "").split(/[ ,]+/);
+    var tokens = tweetSplitHashtags.toLowerCase().split(/[ ,]+/);
     //Go backwards since we are removing elements, arraylist trap
     for (var i = tokens.length - 1; i >= 0; i--) {
       var token = tokens[i];
-      if (token.indexOf("...") !== -1 || token.indexOf("https://") !== -1 || token.length == 0 || stopWordsDict[token]) {
+      if (token.indexOf("...") !== -1 || token.indexOf("https") !== -1 || token.length == 0 || stopWordsDict[token]) {
         tokens.splice(i, 1);
       }
+      token.replace(/[^a-z0-9 ]/g, "");
     }
     return tokens;
   },

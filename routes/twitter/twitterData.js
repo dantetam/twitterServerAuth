@@ -19,30 +19,31 @@ function connectToTweetData(next) {
   });
 }
 
-function queryData(queryString, response) {
+
+function queryDataSearchParam(queryString, beginDate, endDate, response) {
+  var query = {};
+  if (queryString) query['text'] = new RegExp(queryString)};
+  if (beginData && endData) query['creationTime'] = {
+    $gte: beginDate,
+    $lt: endDate
+  };
+  queryData(query, response);
+}
+
+
+function queryData(query, response) {
   async.waterfall([
     function(next) {
       connectToTweetData(next);
     },
     function(client, dbase, next) {
-      var regexQuery = {'text': new RegExp(queryString)};
       var dataInclude = {author: 1, text: 1, creationTime: 1};
 
-      dbase.collection("tweets").find(regexQuery, dataInclude).toArray(function(err, result) {
+      dbase.collection("tweets").find(query, dataInclude).toArray(function(err, result) {
         if (err) throw err;
         client.close();
         next(null, result);
       });
-
-      /*
-      dbase.collection("tweets").find({$where: function() {
-        return this.text.match(queryString) !== null;
-      }}, {}).toArray(function(err, result) {
-        if (err) throw err;
-        client.close();
-        next(null, result);
-      });
-      */
     }
   ], function(err, result) {
     if (err) {
@@ -51,6 +52,7 @@ function queryData(queryString, response) {
     response.send(result);
   });
 }
+
 
 /*
 Search for certain tweets in the topic parameter
@@ -61,6 +63,7 @@ router.get('/:topic', function(req, res, next) {
   queryData(userTopic, res);
   //res.send("Twitter data test query custom: " + userTopic);
 });
+
 
 /*
 Handle no topic given in the URL params

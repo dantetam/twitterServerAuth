@@ -107,7 +107,8 @@ find bearer token; get tweets relating to topic;
 perform calculations on text data and send raw tweets to MongoDB database;
 and a last callback at the end.
 */
-function getTweetsWithChosenTopic(topic) {
+function getTweetsWithChosenTopic(topic, word) {
+  if (word === undefined) word = null;
   async.waterfall([
     function(next) {
       findBearerToken(topic, next); //Pass in no topic set to the website
@@ -131,7 +132,8 @@ function getTweetsWithChosenTopic(topic) {
   });
 }
 
-function getTweetsWithTrendingTopic() {
+function getTweetsWithTrendingTopic(word) {
+  if (word === undefined) word = null;
   async.waterfall([
     function(next) {
       findBearerToken(null, next);
