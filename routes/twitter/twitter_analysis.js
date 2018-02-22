@@ -79,7 +79,9 @@ var self = module.exports = {
   Take in a collection of documents and a word to look for,
   and return the word's importance using the tf-idf metric per document.
   */
-  tfidfIndividualMeasure: function(texts, word) {
+  tfidfIndividualAvgMeasure: function(texts, word) {
+    if (!texts || texts.length === 0) return 0;
+
     var tfidf = new natural.TfIdf();
 
     for (var text of texts) {
@@ -87,9 +89,12 @@ var self = module.exports = {
     }
 
     console.log("Measuring importance of word: " + word);
+    var result = 0;
     tfidf.tfidfs(word, function(i, measure) {
       console.log('document #' + i + ' is ' + measure);
+      result += measure;
     });
+    return result / texts.length;
   },
 
 

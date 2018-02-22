@@ -120,16 +120,14 @@ function getTweetsWithChosenTopic(topic) {
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
       storeTweetsInData(body, next);
-      var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
-      console.log(wordCounts);
-      next(null, wordCounts);
+      getWordImportanceInTopic(tweetStrings, null);
+
+      next(null, null);
     }
   ], function(err, result) {
     if (err) {
       console.log(err);
     }
-    //console.log("Word Counts: ");
-    //console.log(result);
   });
 }
 
@@ -152,16 +150,39 @@ function getTweetsWithTrendingTopic() {
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
       storeTweetsInData(body, next);
-      var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
-      next(null, wordCounts);
+      getWordImportanceInTopic(tweetStrings, null);
+
+      next(null, null);
     }
   ], function(err, result) {
     if (err) {
       console.log(err);
     }
-    //console.log("Word Counts: ");
-    //console.log(result);
   });
+}
+
+function getWordImportanceInTopic(tweetStrings, specialWord) {
+  //Combine individual tweets into multiple sentence documents for analysis
+  var groupedTweets = [];
+  var groupSize = 10;
+  for (var i = 0; i <= tweetStrings.length; i += groupSize) {
+    var group = "";
+    for (var j = i; j < Math.min(i + groupSize, tweetStrings.length); j++) {
+      group += tweetStrings[j] + ". ";
+    }
+    groupedTweets.push(group);
+  }
+
+  if (specialWord === null) {
+    //Get word counts for finding a suitable test word
+    var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
+
+    //Find the 7th most popular word
+    var indexWord = Math.min(7, wordCounts.length - 1);
+    specialWord = wordCounts[indexWord][0];
+  }
+  //Compute its tf-idf importance metric
+  twitterAnalysis.tfidfIndividualAvgMeasure(groupedTweets, specialWord);
 }
 
 /*
