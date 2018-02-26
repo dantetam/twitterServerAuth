@@ -17,13 +17,11 @@ function queryServerStatus(res) {
     function(next) {
       getServerStatus(next);
     }
-  ], function(err, result) {
+  ], function(err, count) {
     if (err) {
       console.log(err);
     }
-    res.send("Tweet data count: " + result);
-    //console.log("Word Counts: ");
-    //console.log(result);
+    res.send("Tweet data count: " + count);
   });
 }
 
