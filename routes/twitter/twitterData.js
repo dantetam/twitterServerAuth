@@ -59,7 +59,7 @@ function queryData(query, response) {
 router.get('/recent', function(req, res, next) {
   var currentDate = new Date();
   var previousDate = new Date();
-  previousDate.setHours(currentDate.getHours() - 24);
+  previousDate.setHours(currentDate.getHours() - 8);
   console.log(previousDate);
   console.log(currentDate);
   queryDataSearchParam("", previousDate.toJSON(), currentDate.toJSON(), res);

@@ -8,6 +8,9 @@ var authKeys = require('./twitter_auth.json');
 var twitterAnalysis = require('./twitter_analysis.js');
 
 var Tweet = require("../../models/tweet");
+var siteData = require("./storedTwitterConfig.js");
+
+var focusTopicsCountMax = 25;
 
 /*
 Fix and modularize these callbacks so they form a neat queue and final callback to render the website
@@ -211,6 +214,29 @@ function storeTweetsInData(tweetsJson, next) {
   }
 }
 
+
+router.put("/focus/:topic", function(req, res, next) {
+  var userTopic = req.params["topic"];
+  //res.send("request: PUT /focus/" + userTopic);
+  siteData["focusTopics"].splice(0, 0, userTopic);
+  if (siteData["focusTopics"].length > focusTopicsCountMax) {
+    siteData["focusTopics"].splice(siteData["focusTopics"].length - 1, 1);
+  }
+  res.send(siteData["focusTopics"]);
+});
+
+
+router.delete("/focus/:topic", function(req, res, next) {
+  var userTopic = req.params["topic"];
+  for (var i = 0; i < siteData["focusTopics"].length; i++) {
+    if (siteData["focusTopics"][i] === userTopic) {
+      siteData["focusTopics"].splice(i, 1);
+    }
+  }
+  res.send(siteData["focusTopics"]);
+});
+
+
 router.get("/randomSample", function(req, res, next) {
   res.send("Here is a collection of random tweets sampled from the database.");
   // Get random data using mongooseRandom query library
@@ -219,6 +245,7 @@ router.get("/randomSample", function(req, res, next) {
     //res.send(tweets);
   });
 });
+
 
 /* This callback happens when the user creates the requests
 GET /twittertest/:topic
@@ -239,6 +266,7 @@ router.get('/:topic', function(req, res, next) {
 
   res.send("The server is now processing the Twitter topic: " + userTopic);
 });
+
 
 /*
 Handle no topic given in the URL params
