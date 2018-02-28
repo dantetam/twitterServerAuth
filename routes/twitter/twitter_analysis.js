@@ -1,6 +1,8 @@
 var stemmer = require('./stemmer.js');
 var natural = require('natural');
 
+var trieDictionary = require("./trieDictionary.js");
+
 var self = module.exports = {
 
   //Sourced from https://stackoverflow.com/questions/4180363/javascript-regexp-replacing-1-with-f1
@@ -63,6 +65,10 @@ var self = module.exports = {
       }
     }
     return doubleArrTokens;
+  },
+
+  findAllProperNouns: function(doubleArrTokens) {
+
   },
 
   /*
