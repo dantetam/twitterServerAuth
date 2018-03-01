@@ -19,7 +19,7 @@ function connectToTweetData(next) {
 }
 
 
-function queryDataSearchParam(queryString, beginDate, endDate, response) {
+function queryDataSearchParam(queryString, beginDate, endDate, response, outputMode) {
   var query = {};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
   if (beginDate && endDate) {
@@ -28,11 +28,11 @@ function queryDataSearchParam(queryString, beginDate, endDate, response) {
       $lt: new Date(endDate)
     };
   }
-  queryData(query, response);
+  queryData(query, response, outputMode);
 }
 
 
-function queryData(query, response, mode) {
+function queryData(query, response, outputMode) {
   var dataInclude = {author: 1, text: 1, creationTime: 1};
 
   async.waterfall([
@@ -64,20 +64,29 @@ function queryData(query, response, mode) {
     if (err) {
       console.log(err);
     }
-    response.write("Total Tweets Found: " + totalCount + "\n \n \n");
-    response.write(JSON.stringify(sampleTweets));
-    response.end();
+    if (outputMode === "text") {
+      response.write("Total Tweets Found: " + totalCount + "\n \n \n");
+      response.write(JSON.stringify(sampleTweets));
+      response.end();
+    }
+    else {
+      response.send(sampleTweets);
+    }
   });
 }
 
 //Test querying the database by time; get most recent tweets
+//i.e. /twitterData/recent
 router.get('/recent', function(req, res, next) {
   var currentDate = new Date();
   var previousDate = new Date();
   previousDate.setHours(currentDate.getHours() - 8);
   console.log(previousDate);
   console.log(currentDate);
-  queryDataSearchParam("", previousDate.toJSON(), currentDate.toJSON(), res);
+
+  var jsonMode = req.query.output;
+
+  queryDataSearchParam("", previousDate.toJSON(), currentDate.toJSON(), res, jsonMode);
   //res.send("Twitter data test query custom: " + userTopic);
 });
 
@@ -88,7 +97,10 @@ i.e. /twitterData/United_States
 router.get('/:topic', function(req, res, next) {
   var userTopic = req.params["topic"];
   userTopic = userTopic.replace(/\W+/g, " ");
-  queryDataSearchParam(userTopic, null, null, res);
+
+  var jsonMode = req.query.output;
+
+  queryDataSearchParam(userTopic, null, null, res, jsonMode);
   //res.send("Twitter data test query custom: " + userTopic);
 });
 
@@ -97,7 +109,7 @@ Handle no topic given in the URL params
 i.e. /twitterData
 */
 router.get('/', function(req, res, next) {
-  queryDataSearchParam("Trump", null, null, res);
+  queryDataSearchParam("Trump", null, null, res, "json");
   //res.send("Twitter data test query");
 });
 
