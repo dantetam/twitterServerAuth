@@ -22,7 +22,7 @@ function connectToTweetData(next) {
 
 function queryDataSearchParam(queryString, beginDate, endDate, response) {
   var query = {};
-  if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString);
+  if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
   if (beginDate && endDate) {
     query['creationTime'] = {
       $gte: new Date(beginDate),
@@ -34,20 +34,28 @@ function queryDataSearchParam(queryString, beginDate, endDate, response) {
 
 
 function queryData(query, response) {
+  var dataInclude = {author: 1, text: 1, creationTime: 1};
+
   async.waterfall([
     function(next) {
       connectToTweetData(next);
     },
-    function(client, dbase, next) {
-      var dataInclude = {author: 1, text: 1, creationTime: 1};
-
-      dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, result) {
+    function(client, dbase, next) { //Find a not random subsampling of tweets to show
+      dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
         if (err) throw err;
         client.close();
-        next(null, result);
+        next(null, dbase, sampleTweets);
+      });
+    },
+    function(client, dbase, sampleTweets, next) {
+      dbase.collection("tweets").find(query, dataInclude).toArray(function(err, result) {
+        if (err) throw err;
+        client.close();
+        var totalCount = result.length;
+        next(null, sampleTweets, totalCount);
       });
     }
-  ], function(err, result) {
+  ], function(err, sampleTweets, totalCount) {
     if (err) {
       console.log(err);
     }
@@ -72,6 +80,7 @@ i.e. /twitterData/United_States
 */
 router.get('/:topic', function(req, res, next) {
   var userTopic = req.params["topic"];
+  userTopic = userTopic.replace(/\W+/g, " ");
   queryDataSearchParam(userTopic, null, null, res);
   //res.send("Twitter data test query custom: " + userTopic);
 });
