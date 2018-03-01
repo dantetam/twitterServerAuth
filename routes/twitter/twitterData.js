@@ -14,8 +14,7 @@ function connectToTweetData(next) {
   MongoClient.connect(url, function(err, client) {   //Return the mongoDB client obj
     //The client object encompasses the whole database
     if (err) throw err;
-    var dbase = client.db("testForAuth");
-    next(null, client, dbase);
+    next(null, client);
   });
 }
 
@@ -33,33 +32,41 @@ function queryDataSearchParam(queryString, beginDate, endDate, response) {
 }
 
 
-function queryData(query, response) {
+function queryData(query, response, mode) {
   var dataInclude = {author: 1, text: 1, creationTime: 1};
 
   async.waterfall([
     function(next) {
       connectToTweetData(next);
     },
-    function(client, dbase, next) { //Find a not random subsampling of tweets to show
+    function(client, next) { //Find a not random subsampling of tweets to show
+      var dbase = client.db("testForAuth");
       dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
         if (err) throw err;
-        client.close();
-        next(null, dbase, sampleTweets);
+        next(null, client, sampleTweets);
       });
     },
-    function(client, dbase, sampleTweets, next) {
+    function(client, sampleTweets, next) {
+      var dbase = client.db("testForAuth");
       dbase.collection("tweets").find(query, dataInclude).toArray(function(err, result) {
         if (err) throw err;
         client.close();
-        var totalCount = result.length;
-        next(null, sampleTweets, totalCount);
+        var queryCount = result.length;
+        next(null, sampleTweets, queryCount);
+      });
+    },
+    function(sampleTweets, queryCount, next) {
+      Tweet.count({}, function (err, totalCount) {
+        next(err, sampleTweets, queryCount, totalCount);
       });
     }
-  ], function(err, sampleTweets, totalCount) {
+  ], function(err, sampleTweets, queryCount, totalCount) {
     if (err) {
       console.log(err);
     }
-    response.send(result);
+    response.write("Total Tweets Found: " + totalCount + "\n \n \n");
+    response.write(JSON.stringify(sampleTweets));
+    response.end();
   });
 }
 
