@@ -3,10 +3,10 @@ var fs = require('fs');
 
 var self = {
 
-  _data: {
+  //_data: {
     //Data here is structured in the form of nodes, {a: true/false, children: {}}
     //The first children are all letters
-  },
+  //},
 
   addWord: function(word) {
     var pointer = self._data;
@@ -35,7 +35,6 @@ var self = {
 
   readWordsFile: function(fileName) {
     if (self._data !== undefined) return;
-    if (self._data["a"] !== undefined) return;
     self._data = {};
 
     var lineReader = readline.createInterface({
@@ -46,12 +45,16 @@ var self = {
       //console.log('Line from file:', line);
       self.addWord(line.trim());
     });
+
+    lineReader.on('close', function () {
+      //console.log(self._data);
+      console.log(self.findWord("extreme"));
+      console.log(self.findWord("extremettt"));
+    });
   }
 
 };
 
 self.readWordsFile("./routes/twitter/word-list.txt");
-console.log(self.findWord("extreme"));
-console.log(self.findWord("extremettt"));
 
 module.exports = self;
