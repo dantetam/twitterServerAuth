@@ -68,7 +68,18 @@ var self = module.exports = {
   },
 
   findAllProperNouns: function(doubleArrTokens) {
-
+    var notNamedEntity = function(word) {
+      var lower = word.toLowerCase();
+      return trieDictionary.findWord(lower) || lower.indexOf("https") !== -1;
+    }
+    for (var arrTokens of doubleArrTokens) {
+      for (var i = arrTokens.length; i >= 0; i--) { //Go backwards since we remove elements i.e. 'arraylist trap'
+        if (notNamedEntity(arrTokens[i])) { //If the individual token is in the dict of stop words
+          arrTokens.splice(i, 1);
+        }
+      }
+    }
+    return arrTokens;
   },
 
   /*
