@@ -31,9 +31,7 @@ var self = {
     });
 
     lineReader.on('close', function () {
-      //console.log(self._data);
-      console.log(self.findWord("extreme"));
-      console.log(self.findWord("extremettt"));
+
     });
   }
 
