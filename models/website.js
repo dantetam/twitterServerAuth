@@ -1,14 +1,14 @@
 var mongoose = require('mongoose');
 var mongooseRandom = require('mongoose-random');
 
-var page = require('/models/webpage.js'); //Include the mongoDB schema for individual pages as well
+//var page = require('./models/webpage.js'); //Include the mongoDB schema for individual pages as well
 
 /**
 A MongoDB schema used to represent tweet data
 */
 
 var WebsiteSchema = new mongoose.Schema({
-  webPage: {
+  webPages: {
     type: [String],
     required: true
   },

@@ -12,7 +12,7 @@ var WebPageSchema = new mongoose.Schema({
   metadata: {
     type: Object
   },
-  url: {
+  urlFromRoot: {
     type: String,
     required: true,
     trim: true

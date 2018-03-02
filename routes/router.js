@@ -3,7 +3,11 @@ var router = express.Router();
 var User = require('../models/user');
 var async = require('async');
 
+var websiteRequest = require("./website-search/websiteRequest.js");
+
 var Tweet = require('../models/tweet');
+var WebPage = require("../models/webpage");
+var Website = require("../models/website");
 
 function getServerStatus(next) {
   Tweet.count({}, function (err, count) {
