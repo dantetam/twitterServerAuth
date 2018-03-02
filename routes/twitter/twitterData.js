@@ -65,7 +65,8 @@ function queryData(query, response, outputMode) {
       console.log(err);
     }
     if (outputMode === "text") {
-      response.write("Total Tweets Found: " + totalCount + "\n \n \n");
+      var tweetsNumShown = Math.min(queryCount, DEFAULT_QUERY_LIMIT);
+      response.write("Total Tweets Found: " + queryCount + " out of " + totalCount + " (" + tweetsNumShown + " shown) \n \n \n");
       response.write(JSON.stringify(sampleTweets));
       response.end();
     }
