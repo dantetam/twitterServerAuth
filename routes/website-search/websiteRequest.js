@@ -7,6 +7,10 @@ var Website = require("../../models/website");
 
 var self = {
 
+  traverseWebPages: function(next) {
+
+  },
+
   testLoadAllWebPages: function(next) {
     var testData = {
       text: "Example generated at " + new Date().toString(),
@@ -24,7 +28,6 @@ var self = {
         }
         allWebIds.push(webPage.id);
         if (allWebIds.length === allWebPages.length) { //If this is the last webpage to be loaded into system
-          console.log("1");
           next(null, allWebIds);
         }
       });
@@ -32,8 +35,6 @@ var self = {
   },
 
   testCreateWebsite: function(allWebIds) {
-    console.log("2");
-
     var testData = {
       webPages: allWebIds,
       url: "https://dantetam.github.io",
@@ -66,7 +67,7 @@ var self = {
 
 };
 
-console.log("test code");
+
 self.createWebsite();
 
 module.exports = self;
