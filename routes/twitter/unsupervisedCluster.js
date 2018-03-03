@@ -15,6 +15,14 @@ var word2vecDir = "./word2vec/";
 
 var self = {
 
+  kMeansClustering: function(data, numClusters) {
+
+  },
+
+  optimalClustering: function(data) {
+
+  },
+
   /**
   Async. look through word2vec files for the respective word vector for the given word,
   then call the _next_ callback, whether or not successful.
@@ -83,7 +91,6 @@ var self = {
         for (let i = 0; i < result.length; i++) {
           result[i] /= numVectors;
         }
-        console.log(result.length);
       }
     );
   },
@@ -100,12 +107,22 @@ var self = {
     magA = Math.sqrt(magA);
     magB = Math.sqrt(magB);
     return dotProduct / (magA * magB);
+  },
+
+  dist: function(vecA, vecB) {
+    if (vecA.length !== vecB.length) throw new Error("Cannot compute distance of two unequal length vectors");
+    var result = 0;
+    for (var i = 0; i < vecA.length; i++) {
+      let diff = vecA[i] - vecB[i];
+      result += diff * diff;
+    }
+    return Math.sqrt(result);
   }
 
 };
 
 console.log("Executing clustering code");
 
-self.getVectorFromSentence(["this", "is", "a", "sentence"], null);
+self.getVectorFromSentence(["this", "is", "a", "sentence", "prefix", "preempt", "preserve"], null);
 
 module.exports = self;
