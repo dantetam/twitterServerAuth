@@ -170,7 +170,7 @@ var self = {
     var visited = {}; //Pick some initial cluster centroids to start with
     var n = sentenceVectors.length; //Number of points
 
-    var distMatrix = self.getVecDistMatrix(sentenceVectors, thresholdSimilarity);
+    var distMatrix = self.getVecDistMatrix(sentenceVectors);
 
     var randomChoicesPerIter = 10;
 
@@ -199,12 +199,27 @@ var self = {
           points: [index],
           active: true
         }
-        for (var otherIndex = 0; otherIndex < n; otherIndex++) { //Fill the new cluster with neighboring unvisited points
-          if (visited[otherIndex]) continue;
-          if (distMatrix[index][otherIndex] <= thresholdSimilarity) {
-            visited[otherIndex] = true;
-            alreadyChosen++;
-            cluster.points.push(otherIndex);
+
+        var fringe = [{point: index, radius: thresholdSimilarity}];
+        //Change this to a traversal starting from the center point,
+        //decreasing the radius every generation onward from the center.
+        //The radius can be increased up to its parent radius if the parent cluster contains more points.
+        while (fringe.length > 0) {
+          var firstNode = fringe.splice(0, 1)[0];
+          var inspectIndex = firstNode.center;
+          var addToFringe = []; //Collect all new nodes, so we can set their properties, and then add them to the fringe
+          for (var otherIndex = 0; otherIndex < n; otherIndex++) { //Fill the new cluster with neighboring unvisited points
+            if (visited[otherIndex]) continue;
+            if (distMatrix[inspectIndex][otherIndex] <= thresholdSimilarity) {
+              visited[otherIndex] = true;
+              alreadyChosen++;
+              cluster.points.push(otherIndex);
+              addToFringe.push({point: otherIndex, radius: "TBD"});
+            }
+          }
+          for (var newNode of addToFringe) {
+            newNode.radius = Math.min(firstNode.radius, firstNode.radius * (0.6 + addToFringe.length / 100));
+            fringe.push(newNode); 
           }
         }
         clusters.push(cluster);
@@ -241,7 +256,6 @@ var self = {
       }
 
     }
-    var clusterCenters = [];
   },
 
   getMatch: function(arrA, arrB) {
