@@ -178,15 +178,15 @@ var self = {
 
     var alreadyChosen = 0;
 
-    while (true) { //While there are still points not in a cluster
-      var startClusters = [];
+    while (alreadyChosen < n) { //While there are still points not in a cluster
+      //var startClusters = [];
 
       for (var i = 0; i < randomChoices; i++) { //Choose random points to start new clusters
         while (true) {
           var index = Math.floor(Math.random() * n);
           if (visited[index] === undefined) {
             visited[index] = true;
-            startClusters.push(index);
+            //startClusters.push(index);
             alreadyChosen++;
             break;
           }
@@ -196,25 +196,47 @@ var self = {
         var startPoint = sentenceVectors[index];
         var cluster = {
           center: index,
-          points: [index]
+          points: [index],
+          active: true
         }
         for (var otherIndex = 0; otherIndex < n; otherIndex++) { //Fill the new cluster with neighboring unvisited points
           if (visited[otherIndex]) continue;
           if (distMatrix[index][otherIndex] <= thresholdSimilarity) {
             visited[otherIndex] = true;
+            alreadyChosen++;
             cluster.points.push(otherIndex);
           }
         }
         clusters.push(cluster);
       }
 
+
       //Merge clusters if they are close enough. This is satisfied by one or both of these conditions:
       //the clusters overlap significantly;
       //the clusters are close enough and small enough.
       for (var i = 0; i < clusters.length; i++) {
         for (var j = i; j < clusters.length; j++) {
-          if (i === j) continue;
-          var matching = self.getMatch(clusters[i].points, clusters[j].points);
+          if (i === j || !clusters[i].active || !clusters[j].active) continue;
+          var matchingData = self.getMatch(clusters[i].points, clusters[j].points);
+          var matchingObj = matchingData["matchingObj"];
+          var matchingNum = matchingData["matchingNum"];
+          var percentMatch = matchingNum / Math.min(clusters[i].points.length, clusters[j].points.length);
+          if (percentMatch >= 0.6) {
+            for (var otherIndex of clusters[j].points) {
+              if (matchingObj[otherIndex] === true) {
+                continue;
+              }
+              clusters[i].points.push(otherIndex); //Add second cluster points that are not already in first cluster
+              clusters[j].active = false;
+            }
+          }
+        }
+      }
+
+      //Remove inactive clusters
+      for (var i = clusters.length - 1; i >= 0; i--) {
+        if (clusters[i].active) {
+          clusters.splice(i, 1);
         }
       }
 
@@ -236,7 +258,7 @@ var self = {
     for (var x in data) {
       results.push(x);
     }
-    return results;
+    return {"matchingObj": data, "matchingNum": results.length};
   },
 
   getVecDistMatrix: function(sentenceVectors) {
