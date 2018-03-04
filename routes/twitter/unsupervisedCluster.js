@@ -205,12 +205,38 @@ var self = {
             cluster.points.push(otherIndex);
           }
         }
+        clusters.push(cluster);
       }
 
-
+      //Merge clusters if they are close enough. This is satisfied by one or both of these conditions:
+      //the clusters overlap significantly;
+      //the clusters are close enough and small enough.
+      for (var i = 0; i < clusters.length; i++) {
+        for (var j = i; j < clusters.length; j++) {
+          if (i === j) continue;
+          var matching = self.getMatch(clusters[i].points, clusters[j].points);
+        }
+      }
 
     }
     var clusterCenters = [];
+  },
+
+  getMatch: function(arrA, arrB) {
+    var data = {};
+    for (var x of arrA) {
+      data[x] = false;
+    }
+    for (var x of arrB) {
+      if (data[x] === false) {
+        data[x] = true;
+      }
+    }
+    var results = [];
+    for (var x in data) {
+      results.push(x);
+    }
+    return results;
   },
 
   getVecDistMatrix: function(sentenceVectors) {
