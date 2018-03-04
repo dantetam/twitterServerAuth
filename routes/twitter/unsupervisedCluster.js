@@ -15,13 +15,40 @@ var word2vecDir = "./word2vec/";
 
 var self = {
 
+  /*
   kMeansClustering: function(data, numClusters) {
+    var chosenRandomIndices = {}; //Pick some initial cluster centroids to start with
+    var n = data.length; //Number of points
+    for (var i = 0; i < numClusters; i++) {
+      while (true) {
+        var index = Math.random() * n;
+        if (chosenRandomIndices[index] === undefined) {
+          chosenRandomIndices[index] = true;
+          break;
+        }
+      }
+    }
+    var clusterCenters = [];
 
+    for (var kMeansIter = 0; kMeansIter < 10; kMeansIter++) {
+      var clusters = [];
+      for (var index in chosenRandomIndices) {
+        var dataPoint = data[index];
+        clusterCenters.push(dataPoint);
+        clusters.push([]);
+      }
+      for (var i = 0; i < n; i++) {
+        for (var j = 0; j < numClusters; j++) {
+
+        }
+      }
+    }
   },
 
   optimalClustering: function(data) {
 
   },
+  */
 
   /**
   Async. look through word2vec files for the respective word vector for the given word,
@@ -109,7 +136,7 @@ var self = {
     return dotProduct / (magA * magB);
   },
 
-  dist: function(vecA, vecB) {
+  euclideanDist: function(vecA, vecB) {
     if (vecA.length !== vecB.length) throw new Error("Cannot compute distance of two unequal length vectors");
     var result = 0;
     for (var i = 0; i < vecA.length; i++) {
@@ -117,6 +144,89 @@ var self = {
       result += diff * diff;
     }
     return Math.sqrt(result);
+  },
+
+  manhattanDist: function(vecA, vecB) {
+    if (vecA.length !== vecB.length) throw new Error("Cannot compute distance of two unequal length vectors");
+    var result = 0;
+    for (var i = 0; i < vecA.length; i++) {
+      result += vecA[i] - vecB[i];
+    }
+    return result;
+  },
+
+  /**
+  Measure the group diversity/similiarity index of a group of tweets.
+  Ideally the tweets only contain important content words and proper nouns.
+  */
+  sentenceGroupSimilarity: function(sentences, thresholdSimilarity) {
+
+  },
+
+  /**
+
+  */
+  approxCluster: function(sentenceVectors) {
+    var visited = {}; //Pick some initial cluster centroids to start with
+    var n = sentenceVectors.length; //Number of points
+
+    var distMatrix = self.getVecDistMatrix(sentenceVectors, thresholdSimilarity);
+
+    var randomChoicesPerIter = 10;
+
+    var clusters = [];
+
+    var alreadyChosen = 0;
+
+    while (true) { //While there are still points not in a cluster
+      var startClusters = [];
+
+      for (var i = 0; i < randomChoices; i++) { //Choose random points to start new clusters
+        while (true) {
+          var index = Math.floor(Math.random() * n);
+          if (visited[index] === undefined) {
+            visited[index] = true;
+            startClusters.push(index);
+            alreadyChosen++;
+            break;
+          }
+        }
+      }
+      for (var index of startClusters) { //Create new clusters from unvisited points
+        var startPoint = sentenceVectors[index];
+        var cluster = {
+          center: index,
+          points: [index]
+        }
+        for (var otherIndex = 0; otherIndex < n; otherIndex++) { //Fill the new cluster with neighboring unvisited points
+          if (visited[otherIndex]) continue;
+          if (distMatrix[index][otherIndex] <= thresholdSimilarity) {
+            visited[otherIndex] = true;
+            cluster.points.push(otherIndex);
+          }
+        }
+      }
+
+
+
+    }
+    var clusterCenters = [];
+  },
+
+  getVecDistMatrix: function(sentenceVectors) {
+    var n = sentenceVectors.length;
+    var result = new Array(n);
+    for (var i = 0; i < n; i++) {
+      result[i] = new Array(n);
+    }
+    for (var i = 0; i < n; i++) {
+      for (var j = i; j < n; j++) {
+        if (i === j) continue;
+        result[i][j] = self.euclideanDist(sentenceVectors[i], sentenceVectors[j]);
+        result[j][i] = result[i][j];
+      }
+    }
+    return result;
   }
 
 };
