@@ -104,8 +104,7 @@ var self = {
         if (err) {
           throw err;
         }
-        if (vectors.length === 0) return null;
-        if (vectors.length === 1) return vectors[0];
+        if (vectors.length === 0) {next(null, null); return;}
         var result = vectors[0];
         var numVectors = 1;
         for (let i = 1; i < vectors.length; i++) { //Average all non-null vectors together
@@ -123,11 +122,36 @@ var self = {
     );
   },
 
+  getFullVectorFromSentence: function(sentenceTokens, next) {
+    var vecLookups = [];
+    for (let token of sentenceTokens) {
+      let vecLookup = function(next) {
+        self.getWordVec(token, next);
+      };
+      vecLookups.push(vecLookup);
+    }
+
+    async.parallel(
+      vecLookups,
+      function(err, vectors) { //Final callback after parallel execution
+        if (err) {
+          throw err;
+        }
+        for (var i = vectors.length - 1; i >= 0; i--) {
+          if (vectors[i] === null) {
+            vectors.splice(i, 1);
+          }
+        }
+        next(null, vectors);
+      }
+    );
+  },
+
   sentenceGroupGetVectors: function(doubleArrSentenceTokens, next) {
     var vecLookups = [];
     for (let sentenceTokens of doubleArrSentenceTokens) {
       let vecLookup = function(next) {
-        self.getVectorFromSentence(sentenceTokens, next);
+        self.getFullVectorFromSentence(sentenceTokens, next);
       };
       vecLookups.push(vecLookup);
     }
@@ -184,7 +208,7 @@ var self = {
     for (var wordVector of sentence1) {
       let bestMatch = null;
       for (var otherWordVector of sentence2) {
-        var curMatch = self.cosineSimilarity(wordVector, otherWordVector) - self.euclideanDist(wordVector, otherWordVector);
+        var curMatch = self.euclideanDist(wordVector, otherWordVector) - self.cosineSimilarity(wordVector, otherWordVector);
         if (bestMatch === null || curMatch > bestMatch) {
           bestMatch = curMatch;
         }
@@ -337,7 +361,7 @@ var self = {
     for (var i = 0; i < n; i++) {
       for (var j = i; j < n; j++) {
         if (i === j) continue;
-        result[i][j] = self.cosineSimilarity(sentenceVectors[i], sentenceVectors[j]);
+        result[i][j] = self.sentenceSimilarity(sentenceVectors[i], sentenceVectors[j]);
         result[j][i] = result[i][j];
       }
     }
