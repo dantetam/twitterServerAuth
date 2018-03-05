@@ -89,7 +89,7 @@ var self = {
     });
   },
 
-  getVectorFromSentence: function(sentenceTokens) {
+  getVectorFromSentence: function(sentenceTokens, next) {
     var vecLookups = [];
     for (let token of sentenceTokens) {
       let vecLookup = function(next) {
@@ -118,6 +118,29 @@ var self = {
         for (let i = 0; i < result.length; i++) {
           result[i] /= numVectors;
         }
+        next(null, result);
+      }
+    );
+  },
+
+  sentenceGroupGetVectors: function(doubleArrSentenceTokens, next) {
+    var vecLookups = [];
+    for (let sentenceTokens of doubleArrSentenceTokens) {
+      let vecLookup = function(next) {
+        self.getVectorFromSentence(sentenceTokens, next);
+      };
+      vecLookups.push(vecLookup);
+    }
+
+    async.parallel(
+      vecLookups,
+      function(err, sentenceVectors) { //Final callback after parallel execution
+        if (err) {
+          console.log(err);
+          throw err;
+        }
+        //console.log(sentenceVectors);
+        next(null, sentenceVectors);
       }
     );
   },
@@ -150,17 +173,42 @@ var self = {
     if (vecA.length !== vecB.length) throw new Error("Cannot compute distance of two unequal length vectors");
     var result = 0;
     for (var i = 0; i < vecA.length; i++) {
-      result += vecA[i] - vecB[i];
+      result += Math.abs(vecA[i] - vecB[i]);
     }
     return result;
+  },
+
+  sentenceSimilarity: function(sentence1, sentence2) {
+    if (sentence1.length === 0 || sentence2.length === 0) return 0;
+    var avgMatch = 0;
+    for (var wordVector of sentence1) {
+      let bestMatch = null;
+      for (var otherWordVector of sentence2) {
+        var curMatch = self.cosineSimilarity(wordVector, otherWordVector) - self.euclideanDist(wordVector, otherWordVector);
+        if (bestMatch === null || curMatch > bestMatch) {
+          bestMatch = curMatch;
+        }
+      }
+      avgMatch += bestMatch;
+    }
+    return avgMatch / sentence1.length;
   },
 
   /**
   Measure the group diversity/similiarity index of a group of tweets.
   Ideally the tweets only contain important content words and proper nouns.
   */
+  /*
   sentenceGroupSimilarity: function(sentences, thresholdSimilarity) {
 
+  },
+  */
+
+  testCluster: function(doubleArrTokens) {
+    var callback = function(err, sentenceVectors) {
+      self.approxCluster(sentenceVectors);
+    }
+    self.sentenceGroupGetVectors(doubleArrTokens, callback);
   },
 
   /**
@@ -171,29 +219,33 @@ var self = {
     var n = sentenceVectors.length; //Number of points
 
     var distMatrix = self.getVecDistMatrix(sentenceVectors);
-
     var randomChoicesPerIter = 10;
+    var thresholdSimilarity = 10;
 
     var clusters = [];
-
     var alreadyChosen = 0;
 
-    while (alreadyChosen < n) { //While there are still points not in a cluster
-      //var startClusters = [];
+    console.log(distMatrix);
 
-      for (var i = 0; i < randomChoices; i++) { //Choose random points to start new clusters
+    while (alreadyChosen < n) { //While there are still points not in a cluster
+      var startClusters = [];
+      for (var i = 0; i < randomChoicesPerIter; i++) { //Choose random points to start new clusters
         while (true) {
           var index = Math.floor(Math.random() * n);
           if (visited[index] === undefined) {
             visited[index] = true;
-            //startClusters.push(index);
+            startClusters.push(index);
             alreadyChosen++;
+            break;
+          }
+          if (alreadyChosen === n) {
             break;
           }
         }
       }
+
       for (var index of startClusters) { //Create new clusters from unvisited points
-        var startPoint = sentenceVectors[index];
+        //var startPoint = sentenceVectors[index];
         var cluster = {
           center: index,
           points: [index],
@@ -201,7 +253,7 @@ var self = {
         }
 
         var fringe = [{point: index, radius: thresholdSimilarity}];
-        //Change this to a traversal starting from the center point,
+        //This is a traversal starting from the center point,
         //decreasing the radius every generation onward from the center.
         //The radius can be increased up to its parent radius if the parent cluster contains more points.
         while (fringe.length > 0) {
@@ -218,13 +270,12 @@ var self = {
             }
           }
           for (var newNode of addToFringe) {
-            newNode.radius = Math.min(firstNode.radius, firstNode.radius * (0.6 + addToFringe.length / 100));
-            fringe.push(newNode); 
+            newNode.radius = Math.min(firstNode.radius, firstNode.radius * (0.6 + addToFringe.length / 30));
+            fringe.push(newNode);
           }
         }
         clusters.push(cluster);
       }
-
 
       //Merge clusters if they are close enough. This is satisfied by one or both of these conditions:
       //the clusters overlap significantly;
@@ -250,12 +301,14 @@ var self = {
 
       //Remove inactive clusters
       for (var i = clusters.length - 1; i >= 0; i--) {
-        if (clusters[i].active) {
+        if (!clusters[i].active) {
           clusters.splice(i, 1);
         }
       }
 
     }
+
+    console.log(clusters);
   },
 
   getMatch: function(arrA, arrB) {
@@ -284,7 +337,7 @@ var self = {
     for (var i = 0; i < n; i++) {
       for (var j = i; j < n; j++) {
         if (i === j) continue;
-        result[i][j] = self.euclideanDist(sentenceVectors[i], sentenceVectors[j]);
+        result[i][j] = self.cosineSimilarity(sentenceVectors[i], sentenceVectors[j]);
         result[j][i] = result[i][j];
       }
     }
@@ -295,6 +348,11 @@ var self = {
 
 console.log("Executing clustering code");
 
-self.getVectorFromSentence(["this", "is", "a", "sentence", "prefix", "preempt", "preserve"], null);
+//self.getVectorFromSentence(["this", "is", "a", "sentence", "prefix", "preempt", "preserve"], null);
+//self.sentenceGroupGetVectors([["this", "is", "a", "sentence", "prefix", "preempt", "preserve"], ["this", "is", "yet", "another", "sentence"]]);
+//self.testCluster([["this", "is", "a", "sentence", "prefix", "preempt", "preserve"], ["this", "is", "yet", "another", "sentence"], ["sentence", "prevent", "stop", "is"], ["unrelated", "melon", "kiwi"]]);
+//self.testCluster([["sentence", "prefix", "preempt", "preserve"], ["another", "sentence"], ["sentence", "prevent", "stop"], ["unrelated", "melon", "kiwi"]]);
+
+self.testCluster([["apple", "orange", "banana"], ["apple", "tangerine", "grape"], ["bird", "raven", "crow"], ["pigeon", "seagull", "albatross"]]);
 
 module.exports = self;
