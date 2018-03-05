@@ -6,7 +6,6 @@ var request = require("request");
 
 var authKeys = require('./twitter_auth.json');
 var twitterAnalysis = require('./twitter_analysis.js');
-var cluster = require('./unsupervisedCluster.js');
 
 var Tweet = require("../../models/tweet");
 var siteData = require("./storedTwitterConfig.js");

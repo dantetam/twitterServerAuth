@@ -228,9 +228,13 @@ var self = {
   },
   */
 
-  testCluster: function(doubleArrTokens) {
+  testCluster: function(doubleArrTokens, next) {
+    console.log(doubleArrTokens);
+    console.log("^^^^^");
     var callback = function(err, sentenceVectors) {
-      self.approxCluster(sentenceVectors);
+      var clusters = self.approxCluster(sentenceVectors);
+      console.log(clusters);
+      if (next) next(null, clusters);
     }
     self.sentenceGroupGetVectors(doubleArrTokens, callback);
   },
@@ -244,7 +248,7 @@ var self = {
 
     var distMatrix = self.getVecDistMatrix(sentenceVectors);
     var randomChoicesPerIter = 10;
-    var thresholdSimilarity = 10;
+    var thresholdSimilarity = 3;
 
     var clusters = [];
     var alreadyChosen = 0;
@@ -329,10 +333,9 @@ var self = {
           clusters.splice(i, 1);
         }
       }
-
     }
 
-    console.log(clusters);
+    return clusters;
   },
 
   getMatch: function(arrA, arrB) {
@@ -377,6 +380,6 @@ console.log("Executing clustering code");
 //self.testCluster([["this", "is", "a", "sentence", "prefix", "preempt", "preserve"], ["this", "is", "yet", "another", "sentence"], ["sentence", "prevent", "stop", "is"], ["unrelated", "melon", "kiwi"]]);
 //self.testCluster([["sentence", "prefix", "preempt", "preserve"], ["another", "sentence"], ["sentence", "prevent", "stop"], ["unrelated", "melon", "kiwi"]]);
 
-self.testCluster([["apple", "orange", "banana"], ["apple", "tangerine", "grape"], ["bird", "raven", "crow"], ["pigeon", "seagull", "albatross"]]);
+self.testCluster([["apple", "orange", "banana"], ["apple", "tangerine", "grape"], ["bird", "raven", "crow"], ["pigeon", "seagull", "albatross"]], null);
 
 module.exports = self;

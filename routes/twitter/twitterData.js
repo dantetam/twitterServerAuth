@@ -5,6 +5,7 @@ var MongoClient = require('mongodb').MongoClient;
 
 var twitterAnalysis = require('./twitter_analysis.js');
 var Tweet = require("../../models/tweet");
+var cluster = require('./unsupervisedCluster.js');
 
 var DEFAULT_QUERY_LIMIT = 100;
 
@@ -15,6 +16,49 @@ function connectToTweetData(next) {
     //The client object encompasses the whole database
     if (err) throw err;
     next(null, client);
+  });
+}
+
+
+function queryTweetsCluster(queryString, beginDate, endDate, response) {
+  var query = {};
+  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
+  if (beginDate && endDate) {
+    query['creationTime'] = {
+      $gte: new Date(beginDate),
+      $lt: new Date(endDate)
+    };
+  }
+
+  async.waterfall([
+    function(next) {
+      connectToTweetData(next);
+    },
+    function(client, next) { //Find a not random subsampling of tweets to show
+      var dbase = client.db("testForAuth");
+      dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
+        if (err) throw err;
+        next(null, sampleTweets);
+      });
+    },
+    function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
+      var tweetsTextArr = [];
+      for (var tweet of sampleTweets) {
+        tweetsTextArr.push(tweet["text"]);
+      }
+      console.log(sampleTweets)
+      console.log(tweetsTextArr);
+      var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetsTextArr);
+      console.log(tweetArrTokens);
+      next(null, tweetArrTokens);
+    },
+    function(tweetArrTokens, next) { //Use the Twitter analysis to convert word tokens -> vector embeddings -> clusters.
+      cluster.testCluster(tweetArrTokens, next);
+    }
+  ], function(err, clusters) {
+    console.log(clusters);
+    response.send(clusters);
   });
 }
 
@@ -90,6 +134,19 @@ router.get('/recent', function(req, res, next) {
   queryDataSearchParam("", previousDate.toJSON(), currentDate.toJSON(), res, jsonMode);
   //res.send("Twitter data test query custom: " + userTopic);
 });
+
+
+router.get('/recentcluster', function(req, res, next) {
+  var currentDate = new Date();
+  var previousDate = new Date();
+  previousDate.setHours(currentDate.getHours() - 8);
+  console.log(previousDate);
+  console.log(currentDate);
+
+  queryTweetsCluster("", previousDate.toJSON(), currentDate.toJSON(), res);
+  //res.send("Twitter data test query custom: " + userTopic);
+});
+
 
 /*
 Search for certain tweets in the topic parameter

@@ -50,7 +50,7 @@ var self = module.exports = {
       if (token.indexOf("...") !== -1 || token.indexOf("https") !== -1 || token.length == 0 || stopWordsDict[token]) {
         tokens.splice(i, 1);
       }
-      token.replace(/[^a-z0-9 ]/g, "");
+      //token.replace(/[^a-z0-9 ]/g, "");
     }
     return tokens;
   },
