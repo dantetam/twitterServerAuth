@@ -262,7 +262,7 @@ router.get('/:topic', function(req, res, next) {
   //Only start a new queue of repeating requests when the topic changes
   Repeat(function() {
     getTweetsWithChosenTopic(process.env.CURRENT_TOPIC);
-  }).every(1000 * 60 * 1, 'ms').start.now();
+  }).every(1000 * 30 * 1, 'ms').start.now();
 
   res.send("The server is now processing the Twitter topic: " + userTopic);
 });

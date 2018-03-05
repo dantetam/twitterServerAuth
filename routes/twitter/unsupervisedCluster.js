@@ -13,6 +13,8 @@ var async = require("async");
 
 var word2vecDir = "./word2vec/";
 
+var DEFAULT_THRESHOLD_SIMILARITY = 3.35;
+
 var self = {
 
   /*
@@ -55,14 +57,19 @@ var self = {
   then call the _next_ callback, whether or not successful.
   */
   getWordVec: function(word, next) {
-    if (word.length < 2) {
+    if (word.trim().length < 2) {
       next(null, null);
       return;
     };
     var firstTwoLetters = word.substring(0,2);
+    var path = word2vecDir + firstTwoLetters + ".txt";
+    if (!firstTwoLetters.match(/^[a-z]+$/i) || !fs.existsSync(path)) { //Make sure that the first two characters are letters only
+      next(null, null);
+      return;
+    }
 
     var lineReader = readline.createInterface({
-      input: fs.createReadStream(word2vecDir + firstTwoLetters + ".txt")
+      input: fs.createReadStream(path)
     });
 
     let success = false;
@@ -229,11 +236,8 @@ var self = {
   */
 
   testCluster: function(doubleArrTokens, next) {
-    console.log(doubleArrTokens);
-    console.log("^^^^^");
     var callback = function(err, sentenceVectors) {
       var clusters = self.approxCluster(sentenceVectors);
-      console.log(clusters);
       if (next) next(null, clusters);
     }
     self.sentenceGroupGetVectors(doubleArrTokens, callback);
@@ -248,12 +252,10 @@ var self = {
 
     var distMatrix = self.getVecDistMatrix(sentenceVectors);
     var randomChoicesPerIter = 10;
-    var thresholdSimilarity = 3;
+    var thresholdSimilarity = DEFAULT_THRESHOLD_SIMILARITY;
 
     var clusters = [];
     var alreadyChosen = 0;
-
-    console.log(distMatrix);
 
     while (alreadyChosen < n) { //While there are still points not in a cluster
       var startClusters = [];
@@ -286,7 +288,7 @@ var self = {
         //The radius can be increased up to its parent radius if the parent cluster contains more points.
         while (fringe.length > 0) {
           var firstNode = fringe.splice(0, 1)[0];
-          var inspectIndex = firstNode.center;
+          var inspectIndex = firstNode.point;
           var addToFringe = []; //Collect all new nodes, so we can set their properties, and then add them to the fringe
           for (var otherIndex = 0; otherIndex < n; otherIndex++) { //Fill the new cluster with neighboring unvisited points
             if (visited[otherIndex]) continue;
@@ -350,7 +352,9 @@ var self = {
     }
     var results = [];
     for (var x in data) {
-      results.push(x);
+      if (data[x] === true) {
+        results.push(x);
+      }
     }
     return {"matchingObj": data, "matchingNum": results.length};
   },

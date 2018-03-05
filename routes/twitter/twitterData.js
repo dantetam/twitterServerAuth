@@ -7,7 +7,7 @@ var twitterAnalysis = require('./twitter_analysis.js');
 var Tweet = require("../../models/tweet");
 var cluster = require('./unsupervisedCluster.js');
 
-var DEFAULT_QUERY_LIMIT = 100;
+var DEFAULT_QUERY_LIMIT = 300;
 
 function connectToTweetData(next) {
   //connect to MongoDB, initiate callback onConnection, using new mongoDB 3.0 client syntax
@@ -31,6 +31,8 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
     };
   }
 
+  var collectedSampleTweets = null;
+
   async.waterfall([
     function(next) {
       connectToTweetData(next);
@@ -39,6 +41,7 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
       var dbase = client.db("testForAuth");
       dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
         if (err) throw err;
+        collectedSampleTweets = sampleTweets;
         next(null, sampleTweets);
       });
     },
@@ -47,10 +50,7 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
       for (var tweet of sampleTweets) {
         tweetsTextArr.push(tweet["text"]);
       }
-      console.log(sampleTweets)
-      console.log(tweetsTextArr);
       var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetsTextArr);
-      console.log(tweetArrTokens);
       next(null, tweetArrTokens);
     },
     function(tweetArrTokens, next) { //Use the Twitter analysis to convert word tokens -> vector embeddings -> clusters.
@@ -58,7 +58,16 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
     }
   ], function(err, clusters) {
     console.log(clusters);
-    response.send(clusters);
+    var result = [];
+    for (var i = 0; i < clusters.length; i++) {
+      var clusterString = "Cluster " + i + ": ";
+      for (var j = 0; j < clusters[i].points.length; j++) {
+        var index = clusters[i].points[j];
+        clusterString += collectedSampleTweets[index]["text"] + "\\n";
+      }
+      result.push(clusterString);
+    }
+    response.send(result);
   });
 }
 
