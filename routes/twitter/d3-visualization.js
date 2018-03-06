@@ -8,63 +8,50 @@ testing the best _k_ (number of clusters) based on the Schwarz criterion:
 */
 
 var d3 = require("d3");
+var jsdom = require("node-jsdom");
 
 var self = {
 
   testVisualization: function(res) {
-    var pad     = { t: 10, r: 10, b: 50, l: 40 },
-        width   = 800 - pad.l - pad.r,
-        height  = 500 - pad.t - pad.b,
-        samples = d3.range(10).map(d3.random.normal(10, 5)),
-        x       = d3.scale.linear().domain([0, samples.length - 1]).range([0, width]),
-        y       = d3.scale.linear().domain([0, d3.max(samples)]).range([height, 0]),
-        xAxis   = d3.svg.axis().scale(x).orient('bottom').tickSize(height),
-        yAxis   = d3.svg.axis().scale(y).orient('left')
+      jsdom.env({
+  	    html:'',
+  	    features:{ QuerySelector:true }, //you need query selector for D3 to work
+  	    done:function(errors, window){
+  	    	window.d3 = d3.select(window.document); //get d3 into the dom
 
-    var line = d3.svg.line()
-      .interpolate('basis')
-      .x(function(d, i) { return x(i) })
-      .y(y)
+  	    	//do yr normal d3 stuff
+  	    	var svg = window.d3.select('body')
+  	    		.append('div').attr('class','container') //make a container div to ease the saving process
+  	    		.append('svg')
+  	    			.attr({
+  			      		xmlns:'http://www.w3.org/2000/svg',
+  			      		width:chartWidth,
+  			      		height:chartHeight
+  			      	})
+  			    .append('g')
+  			    	.attr('transform','translate(' + chartWidth/2 + ',' + chartWidth/2 + ')');
 
-    var vis = d3.select('body').html('').append('svg')
-      .attr('xmlns', 'http://www.w3.org/2000/svg')
-      .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
-      .attr('width', width + pad.l + pad.r)
-      .attr('height', height + pad.t + pad.b)
-    .append('g')
-      .attr('transform', 'translate(' + pad.l + ',' + pad.t + ')')
+  	    	svg.selectAll('.arc')
+  	    		.data( d3.layout.pie()(pieData) )
+  	    			.enter()
+  	    		.append('path')
+  	    			.attr({
+  	    				'class':'arc',
+  	    				'd':arc,
+  	    				'fill':function(d,i){
+  	    					return colours[i];
+  	    				},
+  	    				'stroke':'#fff'
+  	    			});
 
-    vis.append('g')
-      .attr('class', 'x axis')
-      .call(xAxis)
+  	    	//write out the children of the container div
+      		//fs.writeFileSync(outputLocation, window.d3.select('.container').html()) //using sync to keep the code simple
 
-    vis.append('g')
-      .attr('class', 'y axis')
-      .call(yAxis)
-
-    vis.selectAll('.axis text')
-      .style('fill', '#888')
-      .style('font-family', 'Helvetica Neue')
-      .style('font-size', 11)
-
-    vis.selectAll('.axis line')
-      .style('stroke', '#eee')
-      .style('stroke-width', 1)
-
-    vis.selectAll('.domain')
-      .style('display', 'none')
-
-    vis.selectAll('path.samples')
-      .data([samples])
-    .enter().append('path')
-      .attr('class', 'samples')
-      .attr('d', line)
-      .style('fill', 'none')
-      .style('stroke', '#c00')
-      .style('stroke-width', 2)
+  	    }
+  	});
 
     res.writeHead(200, {'Content-Type': 'image/svg+xml'})
-    res.end(d3.select('body').node().innerHTML)
+    res.end(vis.node().innerHTML)
   }
 
 };
