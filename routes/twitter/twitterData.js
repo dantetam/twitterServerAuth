@@ -9,6 +9,9 @@ var cluster = require('./unsupervisedCluster.js');
 
 var DEFAULT_QUERY_LIMIT = 300;
 
+//TODO: Merge all the query tweets async/promises into a uniform method for querying tweets,
+//and then custom callbacks to handle the results differently per use case.
+
 function connectToTweetData(next) {
   //connect to MongoDB, initiate callback onConnection, using new mongoDB 3.0 client syntax
   var url = "mongodb://localhost:27017/";
@@ -67,6 +70,60 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
       }
       result.push(clusterString);
     }
+    response.send(result);
+  });
+}
+
+
+function queryTweetsMst(queryString, beginDate, endDate, response) {
+  var query = {};
+  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
+  if (beginDate && endDate) {
+    query['creationTime'] = {
+      $gte: new Date(beginDate),
+      $lt: new Date(endDate)
+    };
+  }
+
+  var collectedSampleTweets = null;
+
+  async.waterfall([
+    function(next) {
+      connectToTweetData(next);
+    },
+    function(client, next) { //Find a not random subsampling of tweets to show
+      var dbase = client.db("testForAuth");
+      dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
+        if (err) throw err;
+        collectedSampleTweets = sampleTweets;
+        next(null, sampleTweets);
+      });
+    },
+    function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
+      var tweetsTextArr = [];
+      for (var tweet of sampleTweets) {
+        tweetsTextArr.push(tweet["text"]);
+      }
+      var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetsTextArr);
+      next(null, tweetArrTokens);
+    },
+    function(tweetArrTokens, next) { //Use the Twitter analysis to convert word tokens -> vector embeddings -> clusters.
+      cluster.testMst(tweetArrTokens, next);
+    }
+  ], function(err, mst) {
+    var result = [];
+    for (var i = 0; i < mst.length; i++) {
+      var edgeString = "Edge " + i + ": ";
+      for (var j = 0; j < mst[i].length; j++) {
+        var firstIndex = mst[i][0];
+        var secondIndex = mst[i][1];
+        edgeString += collectedSampleTweets[firstIndex]["text"] + " && " + collectedSampleTweets[secondIndex]["text"];
+      }
+      result.push(edgeString);
+    }
+
+    //result.push("MST contains cycle: " + cluster.graphContainsCycle(mst));
     response.send(result);
   });
 }
@@ -141,6 +198,18 @@ router.get('/recent', function(req, res, next) {
   var jsonMode = req.query.output;
 
   queryDataSearchParam("", previousDate.toJSON(), currentDate.toJSON(), res, jsonMode);
+  //res.send("Twitter data test query custom: " + userTopic);
+});
+
+
+router.get('/recentmst', function(req, res, next) {
+  var currentDate = new Date();
+  var previousDate = new Date();
+  previousDate.setHours(currentDate.getHours() - 8);
+  console.log(previousDate);
+  console.log(currentDate);
+
+  queryTweetsMst("", previousDate.toJSON(), currentDate.toJSON(), res);
   //res.send("Twitter data test query custom: " + userTopic);
 });
 

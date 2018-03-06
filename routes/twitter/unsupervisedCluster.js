@@ -243,6 +243,14 @@ var self = {
     self.sentenceGroupGetVectors(doubleArrTokens, callback);
   },
 
+  testMst: function(doubleArrTokens, next) {
+    var callback = function(err, sentenceVectors) {
+      var clusters = self.mstSentenceVectors(sentenceVectors);
+      if (next) next(null, clusters);
+    }
+    self.sentenceGroupGetVectors(doubleArrTokens, callback);
+  },
+
   /**
 
   */
@@ -348,28 +356,32 @@ var self = {
 
     var distMatrix = self.getVecDistMatrix(sentenceVectors);
     var arrEdges = [];
-    for (var i = 0; i < n; i++) {
-      for (var j = i; j < n; j++) {
+    for (let i = 0; i < n; i++) {
+      for (let j = i; j < n; j++) {
         if (i === j) continue;
         arrEdges.push({i: i, j: j, edge: distMatrix[i][j]});
       }
     }
 
     arrEdges.sort(function(a, b) {
-      return b.edge - a.edge;
+      return a.edge - b.edge;
     });
 
     var result = [];
 
-    while (result.length < n + 1) {
+    while (result.length < n + 1 && arrEdges.length > 0) {
       var firstEdge = arrEdges.splice(0, 1)[0];
-      var i = firstEdge[i], j = firstEdge[j];
-      if (!(visited[i] && visited[j])) {
+      //console.log(result);
+      var i = firstEdge["i"], j = firstEdge["j"];
+      if (visited[i] === undefined || visited[j] === undefined) {
+        //console.log(firstEdge);
         visited[i] = true;
         visited[j] = true;
         result.push([i, j]);
       }
     }
+
+    console.log(result);
 
     return result;
   },
