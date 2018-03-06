@@ -6,6 +6,7 @@ var MongoClient = require('mongodb').MongoClient;
 var twitterAnalysis = require('./twitter_analysis.js');
 var Tweet = require("../../models/tweet");
 var cluster = require('./unsupervisedCluster.js');
+var d3Visualization = require('./d3-visualization.js');
 
 var DEFAULT_QUERY_LIMIT = 300;
 
@@ -20,6 +21,11 @@ function connectToTweetData(next) {
     if (err) throw err;
     next(null, client);
   });
+}
+
+
+function testVisual(response) {
+  d3Visualization.testVisualization(response);
 }
 
 
@@ -118,7 +124,7 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
       for (var j = 0; j < mst[i].length; j++) {
         var firstIndex = mst[i][0];
         var secondIndex = mst[i][1];
-        edgeString += collectedSampleTweets[firstIndex]["text"] + " && " + collectedSampleTweets[secondIndex]["text"];
+        edgeString += collectedSampleTweets[firstIndex]["text"] + " <-------> " + collectedSampleTweets[secondIndex]["text"];
       }
       result.push(edgeString);
     }
@@ -223,6 +229,11 @@ router.get('/recentcluster', function(req, res, next) {
 
   queryTweetsCluster("", previousDate.toJSON(), currentDate.toJSON(), res);
   //res.send("Twitter data test query custom: " + userTopic);
+});
+
+
+router.get("/testvisual", function(req, res, next) {
+  testVisual(res);
 });
 
 
