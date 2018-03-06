@@ -13,7 +13,7 @@ var async = require("async");
 
 var word2vecDir = "./word2vec/";
 
-var DEFAULT_THRESHOLD_SIMILARITY = 3.35;
+var DEFAULT_THRESHOLD_SIMILARITY = 1;
 
 var self = {
 
@@ -300,10 +300,11 @@ var self = {
             }
           }
           for (var newNode of addToFringe) {
-            newNode.radius = Math.min(firstNode.radius, firstNode.radius * (0.6 + addToFringe.length / 30));
+            newNode.radius = Math.min(firstNode.radius * 0.8, firstNode.radius * (0.6 + addToFringe.length / 30));
             fringe.push(newNode);
           }
         }
+        console.log(cluster.points);
         clusters.push(cluster);
       }
 
@@ -318,6 +319,7 @@ var self = {
           var matchingNum = matchingData["matchingNum"];
           var percentMatch = matchingNum / Math.min(clusters[i].points.length, clusters[j].points.length);
           if (percentMatch >= 0.6) {
+            console.log("Merging " + i + " : " + j)
             for (var otherIndex of clusters[j].points) {
               if (matchingObj[otherIndex] === true) {
                 continue;
@@ -338,6 +340,38 @@ var self = {
     }
 
     return clusters;
+  },
+
+  mstSentenceVectors: function(sentenceVectors) {
+    var visited = {};
+    var n = sentenceVectors.length; //Number of points
+
+    var distMatrix = self.getVecDistMatrix(sentenceVectors);
+    var arrEdges = [];
+    for (var i = 0; i < n; i++) {
+      for (var j = i; j < n; j++) {
+        if (i === j) continue;
+        arrEdges.push({i: i, j: j, edge: distMatrix[i][j]});
+      }
+    }
+
+    arrEdges.sort(function(a, b) {
+      return b.edge - a.edge;
+    });
+
+    var result = [];
+
+    while (result.length < n + 1) {
+      var firstEdge = arrEdges.splice(0, 1)[0];
+      var i = firstEdge[i], j = firstEdge[j];
+      if (!(visited[i] && visited[j])) {
+        visited[i] = true;
+        visited[j] = true;
+        result.push([i, j]);
+      }
+    }
+
+    return result;
   },
 
   getMatch: function(arrA, arrB) {
