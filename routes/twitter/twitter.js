@@ -78,7 +78,6 @@ function parseTweets(tweetsJson) {
 /*
 Use the application-only OAuth token to find popular Twitter topics
 */
-
 function getTopics(bearerToken, next) {
   var url = 'https://api.twitter.com/1.1/trends/place.json?id=23424977';
   request({
@@ -94,6 +93,9 @@ function getTopics(bearerToken, next) {
   });
 }
 
+/**
+Convert Twitter Topic Search API JSON response into an array of topic strings.
+*/
 function parseTopics(topicsJson) {
   if (topicsJson["errors"]) return null;
   var trends = topicsJson[0]["trends"];
@@ -166,6 +168,9 @@ function getTweetsWithTrendingTopic(word) {
   });
 }
 
+/**
+Find a word's tf-idf importance in a collection of tweets, which are the individual "documents".
+*/
 function getWordImportanceInTopic(tweetStrings, specialWord) {
   //Combine individual tweets into multiple sentence documents for analysis
   var groupedTweets = [];
@@ -214,7 +219,10 @@ function storeTweetsInData(tweetsJson, next) {
   }
 }
 
-
+/**
+For the requests PUT /twitter/focus/:topic and DELETE ...,
+the user inputs a string topic that the server stores in a compiled list of topics.
+*/
 router.put("/focus/:topic", function(req, res, next) {
   var userTopic = req.params["topic"];
   //res.send("request: PUT /focus/" + userTopic);
@@ -236,7 +244,7 @@ router.delete("/focus/:topic", function(req, res, next) {
   res.send(siteData["focusTopics"]);
 });
 
-
+/*
 router.get("/randomSample", function(req, res, next) {
   res.send("Here is a collection of random tweets sampled from the database.");
   // Get random data using mongooseRandom query library
@@ -245,7 +253,7 @@ router.get("/randomSample", function(req, res, next) {
     //res.send(tweets);
   });
 });
-
+*/
 
 /* This callback happens when the user creates the requests
 GET /twittertest/:topic

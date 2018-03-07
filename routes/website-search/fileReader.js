@@ -1,5 +1,6 @@
 var readline = require('readline');
 var fs = require('fs');
+var textract = require('textract');
 
 var self = {
 
@@ -23,7 +24,7 @@ var self = {
     return filelist;
   },
 
-  getTextContentHtmlDir: function(htmlDir) {
+  getContentHtmlDir: function(htmlDir) {
     var files = self.exploreFiles(htmlDir);
     var result = [];
 
@@ -34,6 +35,15 @@ var self = {
         result.push(indexedData);
       });
     }
+  },
+
+  getTextFromFile: function(filePath, next) {
+    textract.fromFileWithPath(filePath, function( error, text ) {
+      if (error) {
+        throw error;
+      }
+      next(text);
+    });
   }
 
 };

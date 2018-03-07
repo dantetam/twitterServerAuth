@@ -8,7 +8,7 @@ testing the best _k_ (number of clusters) based on the Schwarz criterion:
 */
 
 var d3 = require("d3");
-var jsdom = require("node-jsdom");
+//var jsdom = require("node-jsdom");
 
 var self = {
 
