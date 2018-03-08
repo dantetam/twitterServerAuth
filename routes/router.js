@@ -35,7 +35,8 @@ router.get('/count', function(req, res, next) {
 
 // GET route for reading data
 router.get('/', function (req, res, next) {
-  return res.sendFile(path.join(__dirname + '/templateLogReg/index.html'));
+  //return res.sendFile(path.join(__dirname + '/templateLogReg/index.html'));
+  res.render('twitterServer', {testData: {testKey: 1}, testString: "TestString"});
 });
 
 // GET route for login screen
