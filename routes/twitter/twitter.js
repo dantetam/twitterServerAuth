@@ -129,14 +129,15 @@ function getTweetsWithChosenTopic(topic, word, next) {
       storeTweetsInData(body, next);
       getWordImportanceInTopic(tweetStrings, null);
 
-      next(null, null);
+      var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
+      next(null, wordCounts);
     }
   ], function(err, result) {
     if (err) {
       console.log(err);
     }
     if (next) {
-      next(result);
+      next(null, result);
     }
   });
 }
@@ -323,6 +324,14 @@ router.get('/:topic', function(req, res, next) {
   }).every(1000 * 30 * 1, 'ms').start.now();
 
   res.send("The server is now processing the Twitter topic: " + userTopic);
+});
+
+router.get('/wordmap/:topic', function(req, res, next) {
+  //The callback to first update the page when the user uses this endpoint
+  var firstCallback = function(err, result) {
+    res.render('tweetWordCount', {wordCounts: JSON.stringify(result)});
+  };
+  getTweetsWithChosenTopic(process.env.CURRENT_TOPIC, null, firstCallback);
 });
 
 

@@ -1,0 +1,60 @@
+h1 Twitter Word Count
+div(id="wrapper")
+  p This is the endpoint for /twitter/:topic, and shown here is a test of the word importance visualization.
+
+script(src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js")
+script(src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js")
+script(src="./cloud.js")
+
+script.
+  var wordCounts = !{wordCounts}; //Stringified JSON turned back into object
+  var wordDictionary = {}; //Convert list of sorted word count entries into a word count dictionary
+  for (var entry of wordCounts) {
+    wordDictionary[entry[0]] = +entry[1];
+  }
+  
+  var svg_location = "#chart";
+  var width = $(document).width();
+  var height = $(document).height();
+
+  var fill = d3.scale.category20();
+
+  var wordEntries = d3.entries(wordDictionary);
+
+  var xScale = d3.scale.linear()
+     .domain([0, d3.max(wordEntries, function(d) {
+        return d.value;
+      })
+     ])
+     .range([10,100]);
+
+  d3.layout.cloud().size([width, height])
+    .timeInterval(20)
+    .words(wordEntries)
+    .fontSize(function(d) { return xScale(+d.value); })
+    .text(function(d) { return d.key; })
+    .rotate(function() { return ~~(Math.random() * 2) * 90; })
+    .font("Impact")
+    .on("end", draw)
+    .start();
+
+  function draw(words) {
+    d3.select(svg_location).append("svg")
+        .attr("width", width)
+        .attr("height", height)
+      .append("g")
+        .attr("transform", "translate(" + [width >> 1, height >> 1] + ")")
+      .selectAll("text")
+        .data(words)
+      .enter().append("text")
+        .style("font-size", function(d) { return xScale(d.value) + "px"; })
+        .style("font-family", "Impact")
+        .style("fill", function(d, i) { return fill(i); })
+        .attr("text-anchor", "middle")
+        .attr("transform", function(d) {
+          return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+        })
+        .text(function(d) { return d.key; });
+  }
+
+  d3.layout.cloud().stop();

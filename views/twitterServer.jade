@@ -1,8 +1,8 @@
 include twitterIndex.html
 
 script.
-  var testData="#{testData}";
+  var testData = !{testData}; //Stringified JSON turned back into object
   console.log(testData);
   
-  var testString="#{testString}";
+  var testString = "#{testString}"; //Data from server converted into string
   console.log(testString);

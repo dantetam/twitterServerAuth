@@ -8,7 +8,7 @@ var Tweet = require("../../models/tweet");
 var cluster = require('./unsupervisedCluster.js');
 var d3Visualization = require('./d3-visualization.js');
 
-var DEFAULT_QUERY_LIMIT = 300;
+var DEFAULT_QUERY_LIMIT = 500;
 
 //TODO: Merge all the query tweets async/promises into a uniform method for querying tweets,
 //and then custom callbacks to handle the results differently per use case.
@@ -244,9 +244,7 @@ function queryData(query, response, outputMode) {
 router.get('/recent', function(req, res, next) {
   var currentDate = new Date();
   var previousDate = new Date();
-  previousDate.setHours(currentDate.getHours() - 8);
-  console.log(previousDate);
-  console.log(currentDate);
+  previousDate.setHours(currentDate.getHours() - 24);
 
   var jsonMode = req.query.output;
 
@@ -258,9 +256,7 @@ router.get('/recent', function(req, res, next) {
 router.get('/recentmst', function(req, res, next) {
   var currentDate = new Date();
   var previousDate = new Date();
-  previousDate.setHours(currentDate.getHours() - 8);
-  console.log(previousDate);
-  console.log(currentDate);
+  previousDate.setHours(currentDate.getHours() - 24);
 
   queryTweetsMst("", previousDate.toJSON(), currentDate.toJSON(), res);
   //res.send("Twitter data test query custom: " + userTopic);
@@ -270,9 +266,7 @@ router.get('/recentmst', function(req, res, next) {
 router.get('/recentcluster', function(req, res, next) {
   var currentDate = new Date();
   var previousDate = new Date();
-  previousDate.setHours(currentDate.getHours() - 8);
-  console.log(previousDate);
-  console.log(currentDate);
+  previousDate.setHours(currentDate.getHours() - 24);
 
   queryTweetsCluster("", previousDate.toJSON(), currentDate.toJSON(), res);
   //res.send("Twitter data test query custom: " + userTopic);
@@ -282,9 +276,7 @@ router.get('/recentcluster', function(req, res, next) {
 router.get('/topicgroups', function(req, res, next) {
   var currentDate = new Date();
   var previousDate = new Date();
-  previousDate.setHours(currentDate.getHours() - 8);
-  console.log(previousDate);
-  console.log(currentDate);
+  previousDate.setHours(currentDate.getHours() - 24);
 
   queryTweetsTopicGrouping(previousDate.toJSON(), currentDate.toJSON(), res);
 });
