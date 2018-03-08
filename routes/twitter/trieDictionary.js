@@ -30,7 +30,6 @@ var self = {
     var pointer = self._data;
     for (var i = 0; i < word.length; i++) {
       var char = word.charAt(i);
-      console.log(char + " " + pointer[char]);
       if (pointer[char] === undefined) {
         return false;
       }

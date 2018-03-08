@@ -112,7 +112,7 @@ find bearer token; get tweets relating to topic;
 perform calculations on text data and send raw tweets to MongoDB database;
 and a last callback at the end.
 */
-function getTweetsWithChosenTopic(topic, word) {
+function getTweetsWithChosenTopic(topic, word, next) {
   if (word === undefined) word = null;
   async.waterfall([
     function(next) {
@@ -134,10 +134,13 @@ function getTweetsWithChosenTopic(topic, word) {
     if (err) {
       console.log(err);
     }
+    if (next) {
+      next(result);
+    }
   });
 }
 
-function getTweetsWithTrendingTopic(word) {
+function getTweetsWithTrendingTopic(word, next) {
   if (word === undefined) word = null;
   async.waterfall([
     function(next) {
@@ -165,8 +168,45 @@ function getTweetsWithTrendingTopic(word) {
     if (err) {
       console.log(err);
     }
+    if (next) {
+      next(result);
+    }
   });
 }
+
+function getProperNounsFromTweets(next) {
+  async.waterfall([
+    function(next) {
+      findBearerToken(null, next);
+    },
+    function(err, resp, body, next) {
+      var bearerToken = body["access_token"];
+      getTopics(bearerToken, next);
+    },
+    function(err, resp, body, bearerToken, next) {
+      var topicStrings = parseTopics(body);
+      var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
+      console.log("Chose trending topic (US): " + randomTopic);
+      process.env.CURRENT_TOPIC = randomTopic;
+      getTweets(bearerToken, randomTopic, next);
+    },
+    function(err, resp, body, next) {
+      var tweetStrings = parseTweets(body);
+      var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
+      var result = cluster.testProperNounTopicGrouping(properNounTokens);
+      next(null, result);
+    }
+  ], function(err, result) {
+    if (err) {
+      console.log(err);
+    }
+    console.log(result)
+    if (next) {
+      next(result);
+    }
+  });
+}
+
 
 /**
 Find a word's tf-idf importance in a collection of tweets, which are the individual "documents".
@@ -219,6 +259,14 @@ function storeTweetsInData(tweetsJson, next) {
   }
 }
 
+
+router.put("/topicclusters", function(req, res, next) {
+  getProperNounsFromTweets(null);
+
+  res.send("The server chose a topic to test topic associations.");
+});
+
+
 /**
 For the requests PUT /twitter/focus/:topic and DELETE ...,
 the user inputs a string topic that the server stores in a compiled list of topics.
@@ -269,7 +317,7 @@ router.get('/:topic', function(req, res, next) {
 
   //Only start a new queue of repeating requests when the topic changes
   Repeat(function() {
-    getTweetsWithChosenTopic(process.env.CURRENT_TOPIC);
+    getTweetsWithChosenTopic(process.env.CURRENT_TOPIC, null, null);
   }).every(1000 * 30 * 1, 'ms').start.now();
 
   res.send("The server is now processing the Twitter topic: " + userTopic);
@@ -288,7 +336,7 @@ router.get('/', function(req, res, next) {
   });
   */
   Repeat(function() {
-    getTweetsWithTrendingTopic();
+    getTweetsWithTrendingTopic(null, null);
   }).every(1000 * 60 * 1, 'ms').start.now();
 
   res.send("The server is processing a chosen topic.");

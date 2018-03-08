@@ -288,7 +288,7 @@ var self = {
   },
 
   testProperNounTopicGrouping: function(properNounTokens) {
-    var results = approxCluster(properNounTokens, self.overlapScore);
+    var results = self.approxCluster(properNounTokens, self.overlapScore);
     return results;
   },
 

@@ -74,7 +74,7 @@ var self = module.exports = {
       return trieDictionary.findWord(lower) || lower.indexOf("https") !== -1;
     }
     for (var arrTokens of doubleArrTokens) {
-      for (var i = arrTokens.length; i >= 0; i--) { //Go backwards since we remove elements i.e. 'arraylist trap'
+      for (var i = arrTokens.length - 1; i >= 0; i--) { //Go backwards since we remove elements i.e. 'arraylist trap'
         if (notNamedEntity(arrTokens[i])) { //If the individual token is in the dict of stop words
           arrTokens.splice(i, 1);
         }
@@ -158,6 +158,10 @@ var self = module.exports = {
     var doubleArrTokens = self.sanitizeTweets(tweetsArr);
     var tweetsWordCount = self.wordCount(doubleArrTokens);
     return tweetsWordCount;
-  }
+  },
+
+  findProperNounsFromStrings: function(tweetsArr) {
+    return self.findAllProperNouns(self.sanitizeTweets(tweetsArr));
+  },
 
 };

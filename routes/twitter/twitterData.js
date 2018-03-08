@@ -29,6 +29,53 @@ function testVisual(response) {
 }
 
 
+function queryTweetsTopicGrouping(beginDate, endDate, response) {
+  var query = {};
+  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  if (beginDate && endDate) {
+    query['creationTime'] = {
+      $gte: new Date(beginDate),
+      $lt: new Date(endDate)
+    };
+  }
+
+  async.waterfall([
+    function(next) {
+      connectToTweetData(next);
+    },
+    function(client, next) { //Find a not random subsampling of tweets to show
+      var dbase = client.db("testForAuth");
+      dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
+        if (err) throw err;
+        next(null, sampleTweets);
+      });
+    },
+    function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
+      var tweetsTextArr = [];
+      for (var tweet of sampleTweets) {
+        tweetsTextArr.push(tweet["text"]);
+      }
+      var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetsTextArr);
+      var result = cluster.testProperNounTopicGrouping(properNounTokens);
+      next(null, sampleTweets, result);
+    }
+  ], function(err, sampleTweets, clusters) {
+    console.log(clusters);
+    var result = [];
+    for (var i = 0; i < clusters.length; i++) {
+      var clusterString = "Cluster " + i + ": ";
+      for (var j = 0; j < clusters[i].points.length; j++) {
+        var index = clusters[i].points[j];
+        clusterString += sampleTweets[index]["text"] + "\\n";
+      }
+      result.push(clusterString);
+    }
+    response.send(result);
+  });
+
+}
+
+
 function queryTweetsCluster(queryString, beginDate, endDate, response) {
   var query = {};
   var dataInclude = {author: 1, text: 1, creationTime: 1};
@@ -229,6 +276,17 @@ router.get('/recentcluster', function(req, res, next) {
 
   queryTweetsCluster("", previousDate.toJSON(), currentDate.toJSON(), res);
   //res.send("Twitter data test query custom: " + userTopic);
+});
+
+
+router.get('/topicgroups', function(req, res, next) {
+  var currentDate = new Date();
+  var previousDate = new Date();
+  previousDate.setHours(currentDate.getHours() - 8);
+  console.log(previousDate);
+  console.log(currentDate);
+
+  queryTweetsTopicGrouping(previousDate.toJSON(), currentDate.toJSON(), res);
 });
 
 
