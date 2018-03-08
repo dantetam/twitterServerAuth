@@ -14,7 +14,7 @@ var async = require("async");
 var word2vecDir = "./word2vec/";
 
 var DEFAULT_THRESHOLD_SIMILARITY = 3.5;
-var DEFAULT_TOPIC_MATCHING_LIMIT = 0.6;
+var DEFAULT_TOPIC_MATCHING_LIMIT = 0.3;
 
 var self = {
 
@@ -294,7 +294,10 @@ var self = {
   },
 
   /**
-
+  This algorithm works with sentence vectors (either word2vec or word tokens) to produce sensible cluster approximations quickly.
+  This works by "seeding" some initial cluster start points,
+  expanding around the cluster points to populate new clusters,
+  and merge clusters if there is enough overlap between shared points.
   */
   approxCluster: function(sentenceVectors, metric, similiarityLimitFunc) {
     var visited = {}; //Pick some initial cluster centroids to start with
@@ -391,6 +394,7 @@ var self = {
     return clusters;
   },
 
+  //Construct a minimum spanning tree of sentence vectors using a custom distance metric.
   mstSentenceVectors: function(sentenceVectors, metric) {
     var visited = {};
     var n = sentenceVectors.length; //Number of points
