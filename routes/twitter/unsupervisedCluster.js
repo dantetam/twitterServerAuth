@@ -96,7 +96,11 @@ var self = {
     });
   },
 
-  getVectorFromSentence: function(sentenceTokens, next) {
+  /**
+  Async. run multiple vector retrieval I/O functions to get vectors for all words in a sentence,
+  and then average them, as a rough word embedding heuristic.
+  */
+  getAveragedVectorFromSentence: function(sentenceTokens, next) {
     var vecLookups = [];
     for (let token of sentenceTokens) {
       let vecLookup = function(next) {
@@ -129,6 +133,10 @@ var self = {
     );
   },
 
+  /**
+  Async. run multiple vector retrieval I/O functions to get vectors for all words in a sentence,
+  and then compile them into a 2d array of numbers (1d array of vectors).
+  */
   getFullVectorFromSentence: function(sentenceTokens, next) {
     var vecLookups = [];
     for (let token of sentenceTokens) {
@@ -154,6 +162,9 @@ var self = {
     );
   },
 
+  /**
+  Wait for all sentences to be transformed into vectors, and then return execute a callback with the results.
+  */
   sentenceGroupGetVectors: function(doubleArrSentenceTokens, next) {
     var vecLookups = [];
     for (let sentenceTokens of doubleArrSentenceTokens) {
@@ -176,6 +187,22 @@ var self = {
     );
   },
 
+  //Compute the overlap similiarity score of two possibly unequal length vectors
+  overlapScore: function(vecA, vecB) {
+    if (vecA.length === 0 || vecB.length === 0) return 0;
+    var overlap = {};
+    var intersection = 0;
+    for (var item of vecA) {
+      if (overlap[item] === undefined) overlap[item] = 0;
+    }
+    for (var item of vecB) {
+      if (overlap[item] === 0) intersection++;
+    }
+    var union = vecA.length + vecB.length - intersection;
+    return intersection / union;
+  },
+
+  //The "angle" similiarity of two vectors, where 1 represents parallel and 0 represents opposite facing vectors.
   cosineSimilarity: function(vecA, vecB) {
     if (vecA.length !== vecB.length) throw new Error("Cannot compute cos. similiarity of two unequal length vectors");
     var dotProduct = 0;
@@ -209,6 +236,9 @@ var self = {
     return result;
   },
 
+  /**
+  Sentence similiarity heuristic: for every word in sentence1, determine its best match, and average the best match for every word.
+  */
   sentenceSimilarity: function(sentence1, sentence2) {
     if (sentence1.length === 0 || sentence2.length === 0) return 0;
     var avgMatch = 0;
@@ -235,9 +265,15 @@ var self = {
   },
   */
 
+  /**
+  Front facing methods for taking in processed tweets and returning the desired result:
+  a series of cluster approximations;
+  a minimum spanning tree using the sentence distance metrics above;
+  or, a naive grouping by proper nouns (possibly the most effective).
+  */
   testCluster: function(doubleArrTokens, next) {
     var callback = function(err, sentenceVectors) {
-      var clusters = self.approxCluster(sentenceVectors);
+      var clusters = self.approxCluster(sentenceVectors, self.sentenceSimilarity);
       if (next) next(null, clusters);
     }
     self.sentenceGroupGetVectors(doubleArrTokens, callback);
@@ -245,20 +281,25 @@ var self = {
 
   testMst: function(doubleArrTokens, next) {
     var callback = function(err, sentenceVectors) {
-      var clusters = self.mstSentenceVectors(sentenceVectors);
+      var clusters = self.mstSentenceVectors(sentenceVectors, self.sentenceSimilarity);
       if (next) next(null, clusters);
     }
     self.sentenceGroupGetVectors(doubleArrTokens, callback);
   },
 
+  testProperNounTopicGrouping: function(properNounTokens) {
+    var results = approxCluster(properNounTokens, self.overlapScore);
+    return results;
+  },
+
   /**
 
   */
-  approxCluster: function(sentenceVectors) {
+  approxCluster: function(sentenceVectors, metric) {
     var visited = {}; //Pick some initial cluster centroids to start with
     var n = sentenceVectors.length; //Number of points
 
-    var distMatrix = self.getVecDistMatrix(sentenceVectors);
+    var distMatrix = self.getVecDistMatrix(sentenceVectors, metric);
     var randomChoicesPerIter = 10;
     var thresholdSimilarity = DEFAULT_THRESHOLD_SIMILARITY;
 
@@ -350,11 +391,11 @@ var self = {
     return clusters;
   },
 
-  mstSentenceVectors: function(sentenceVectors) {
+  mstSentenceVectors: function(sentenceVectors, metric) {
     var visited = {};
     var n = sentenceVectors.length; //Number of points
 
-    var distMatrix = self.getVecDistMatrix(sentenceVectors);
+    var distMatrix = self.getVecDistMatrix(sentenceVectors, metric);
     var arrEdges = [];
     for (let i = 0; i < n; i++) {
       for (let j = i; j < n; j++) {
@@ -405,7 +446,10 @@ var self = {
     return {"matchingObj": data, "matchingNum": results.length};
   },
 
-  getVecDistMatrix: function(sentenceVectors) {
+  getVecDistMatrix: function(sentenceVectors, metric) {
+    if (metric === undefined) {
+      throw Error("No sentence similiarity metric given for getVecDistMatrix()");
+    }
     var n = sentenceVectors.length;
     var result = new Array(n);
     for (var i = 0; i < n; i++) {
@@ -414,7 +458,7 @@ var self = {
     for (var i = 0; i < n; i++) {
       for (var j = i; j < n; j++) {
         if (i === j) continue;
-        result[i][j] = self.sentenceSimilarity(sentenceVectors[i], sentenceVectors[j]);
+        result[i][j] = metric(sentenceVectors[i], sentenceVectors[j]);
         result[j][i] = result[i][j];
       }
     }
