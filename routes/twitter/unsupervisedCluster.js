@@ -13,7 +13,8 @@ var async = require("async");
 
 var word2vecDir = "./word2vec/";
 
-var DEFAULT_THRESHOLD_SIMILARITY = 1;
+var DEFAULT_THRESHOLD_SIMILARITY = 3.5;
+var DEFAULT_TOPIC_MATCHING_LIMIT = 0.6;
 
 var self = {
 
@@ -273,7 +274,7 @@ var self = {
   */
   testCluster: function(doubleArrTokens, next) {
     var callback = function(err, sentenceVectors) {
-      var clusters = self.approxCluster(sentenceVectors, self.sentenceSimilarity);
+      var clusters = self.approxCluster(sentenceVectors, self.sentenceSimilarity, function(x) {return x < DEFAULT_THRESHOLD_SIMILARITY;});
       if (next) next(null, clusters);
     }
     self.sentenceGroupGetVectors(doubleArrTokens, callback);
@@ -288,20 +289,19 @@ var self = {
   },
 
   testProperNounTopicGrouping: function(properNounTokens) {
-    var results = self.approxCluster(properNounTokens, self.overlapScore);
+    var results = self.approxCluster(properNounTokens, self.overlapScore, function(x) {return x > DEFAULT_TOPIC_MATCHING_LIMIT;});
     return results;
   },
 
   /**
 
   */
-  approxCluster: function(sentenceVectors, metric) {
+  approxCluster: function(sentenceVectors, metric, similiarityLimitFunc) {
     var visited = {}; //Pick some initial cluster centroids to start with
     var n = sentenceVectors.length; //Number of points
 
     var distMatrix = self.getVecDistMatrix(sentenceVectors, metric);
     var randomChoicesPerIter = 10;
-    var thresholdSimilarity = DEFAULT_THRESHOLD_SIMILARITY;
 
     var clusters = [];
     var alreadyChosen = 0;
@@ -331,7 +331,7 @@ var self = {
           active: true
         }
 
-        var fringe = [{point: index, radius: thresholdSimilarity}];
+        var fringe = [{point: index, radius: 0}];
         //This is a traversal starting from the center point,
         //decreasing the radius every generation onward from the center.
         //The radius can be increased up to its parent radius if the parent cluster contains more points.
@@ -341,7 +341,7 @@ var self = {
           var addToFringe = []; //Collect all new nodes, so we can set their properties, and then add them to the fringe
           for (var otherIndex = 0; otherIndex < n; otherIndex++) { //Fill the new cluster with neighboring unvisited points
             if (visited[otherIndex]) continue;
-            if (distMatrix[inspectIndex][otherIndex] <= thresholdSimilarity) {
+            if (similiarityLimitFunc(distMatrix[inspectIndex][otherIndex])) {
               visited[otherIndex] = true;
               alreadyChosen++;
               cluster.points.push(otherIndex);

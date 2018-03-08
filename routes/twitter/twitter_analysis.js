@@ -80,7 +80,7 @@ var self = module.exports = {
         }
       }
     }
-    return arrTokens;
+    return doubleArrTokens;
   },
 
   /*

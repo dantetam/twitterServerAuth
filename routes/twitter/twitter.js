@@ -6,6 +6,7 @@ var request = require("request");
 
 var authKeys = require('./twitter_auth.json');
 var twitterAnalysis = require('./twitter_analysis.js');
+var cluster = require('./unsupervisedCluster.js');
 
 var Tweet = require("../../models/tweet");
 var siteData = require("./storedTwitterConfig.js");
@@ -186,13 +187,14 @@ function getProperNounsFromTweets(next) {
     function(err, resp, body, bearerToken, next) {
       var topicStrings = parseTopics(body);
       var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
-      console.log("Chose trending topic (US): " + randomTopic);
+      console.log("Chose trending topic for topic grouping (US): " + randomTopic);
       process.env.CURRENT_TOPIC = randomTopic;
       getTweets(bearerToken, randomTopic, next);
     },
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
       var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
+      console.log(properNounTokens);
       var result = cluster.testProperNounTopicGrouping(properNounTokens);
       next(null, result);
     }
@@ -260,7 +262,7 @@ function storeTweetsInData(tweetsJson, next) {
 }
 
 
-router.put("/topicclusters", function(req, res, next) {
+router.get("/topicclusters", function(req, res, next) {
   getProperNounsFromTweets(null);
 
   res.send("The server chose a topic to test topic associations.");
