@@ -5,14 +5,12 @@ div(id="chart")
 
 script(src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js")
 script(src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js")
-//script(src="./cloud.js")
-//script(src="//gist.github.com/emeeks/3361332/raw/61cf57523fe8cf314333e5f60cc266351fec2017/d3.layout.cloud.js")
-script(src="/js/cloud.js")
+script(src="/js/lib/cloud.js")
 
 script.
   var wordCounts = !{wordCounts}; //Stringified JSON turned back into object
   var wordDictionary = {}; //Convert list of sorted word count entries into a word count dictionary
-  //For the purpose of this visualization, transform the data by ln(x)
+  //For the purpose of this visualization, transform the data by ln(x), for a more visually informative log-linear data space (i.e. closer together in magnitude).
   for (var entry of wordCounts) {
     wordDictionary[entry[0]] = +Math.log(entry[1]);
   }
@@ -37,14 +35,12 @@ script.
     .words(wordEntries)
     .fontSize(function(d) { return xScale(+d.value); })
     .text(function(d) { return d.key; })
-    .rotate(function() { return ~~(Math.random() * 2) * 90; })
+    .rotate(function() { return (Math.random() * 2 - 1) * 20; })
     .font("Arial")
     .on("end", draw)
     .start();
 
   function draw(words) {
-    console.log("Drawing");
-    console.log(words);
     d3.select(svgId).append("svg")
         .attr("width", width)
         .attr("height", height)
@@ -62,8 +58,7 @@ script.
         })
         .text(function(d) { return d.key; });
   }
-  
+
   console.log(wordCounts);
-  console.log(wordEntries);
 
   d3.layout.cloud().stop();

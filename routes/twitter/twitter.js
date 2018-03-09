@@ -129,7 +129,7 @@ function getTweetsWithChosenTopic(topic, word, next) {
       storeTweetsInData(body, next);
       getWordImportanceInTopic(tweetStrings, null);
 
-      var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings, 0); //Get the word count of all words
+      var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings, 2); //Get the word count of all words
       next(null, wordCounts);
     }
   ], function(err, result) {
