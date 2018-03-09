@@ -154,9 +154,9 @@ var self = module.exports = {
   The public facing method for taking in an array of tweet strings, direcrly from the JSON callback,
   and returning a list of words by count.
   */
-  getWordCountFromTweets: function(tweetsArr) {
+  getWordCountFromTweets: function(tweetsArr, cutoffCountInc = 5) {
     var doubleArrTokens = self.sanitizeTweets(tweetsArr);
-    var tweetsWordCount = self.wordCount(doubleArrTokens);
+    var tweetsWordCount = self.wordCount(doubleArrTokens, cutoffCountInc);
     return tweetsWordCount;
   },
 

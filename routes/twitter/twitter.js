@@ -129,7 +129,7 @@ function getTweetsWithChosenTopic(topic, word, next) {
       storeTweetsInData(body, next);
       getWordImportanceInTopic(tweetStrings, null);
 
-      var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings);
+      var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings, 0); //Get the word count of all words
       next(null, wordCounts);
     }
   ], function(err, result) {
@@ -306,6 +306,19 @@ router.get("/randomSample", function(req, res, next) {
 });
 */
 
+
+router.get('/wordmap/:topic', function(req, res, next) {
+  var userTopic = req.params["topic"];
+  process.env.CURRENT_TOPIC = userTopic;
+  //The callback to first update the page when the user uses this endpoint
+  var firstCallback = function(err, result) {
+    //This sends the word counts to the client, which are rendered by d3.js in the browser.
+    res.render('tweetWordCount', {wordCounts: JSON.stringify(result)});
+  };
+  getTweetsWithChosenTopic(userTopic, null, firstCallback);
+});
+
+
 /* This callback happens when the user creates the requests
 GET /twittertest/:topic
 where :topic is a kind of "wildcard"
@@ -324,14 +337,6 @@ router.get('/:topic', function(req, res, next) {
   }).every(1000 * 30 * 1, 'ms').start.now();
 
   res.send("The server is now processing the Twitter topic: " + userTopic);
-});
-
-router.get('/wordmap/:topic', function(req, res, next) {
-  //The callback to first update the page when the user uses this endpoint
-  var firstCallback = function(err, result) {
-    res.render('tweetWordCount', {wordCounts: JSON.stringify(result)});
-  };
-  getTweetsWithChosenTopic(process.env.CURRENT_TOPIC, null, firstCallback);
 });
 
 
