@@ -53,18 +53,25 @@ dante.tam1@gmail.com
       <br>
       <br>
       <br>
-      <p>Hello, this is a full-stack web dev MEAN stack server for experimentation with async node.js, RESTful APIs, and MongoDB storage and querying.</p>
+      <p>Hello, this is a full-stack mongo.db, express, node.js server for experimentation with async node.js, RESTful APIs, and MongoDB storage and querying.</p>
 
       <br>
 
       <a href="/twitter">Start up the Twitter server. /twitter</a> &emsp; <a href="/twitter/United_States">With topic parameter. /twitter/:topic</a> <br>
-      <a href="/twitterData">Search the Tweet data. /twitterData</a> &emsp; <a href="/twitterData/Obama">With query parameter. /twitterData/:query</a> <br>
+      <a href="/twitter/wordmap/Donald_Trump">Search a topic and dynamically deliver a word map visualization. /twitter/wordmap/:topic</a><br>
+      <p>Put topic into website list. PUT /twitter/focus/:topic &emsp; Delete topic from website list. DELETE /twitter/focus/:topic</p><br>
+
+      <br>
+
+      <a href="/twitterData">Search the tweet data. /twitterData</a> &emsp; <a href="/twitterData/Obama">With query parameter. /twitterData/:query</a> <br>
       <a href="/twitterData/recent">Search most recent tweets. /twitterData/recent</a><br>
       <a href="/twitterData/recentcluster">Search most recent tweets and use cluster approximation algorithm. /twitterData/recentcluster</a><br>
       <a href="/twitterData/recentmst">Search most recent tweets and use MST algorithm. /twitterData/recentmst</a><br>
       <a href="/twitterData/topicgroups">Better topic grouping algorithm (overlap). /twitterData/topicgroups</a><br>
-      <a href="/twitter/wordmap/Donald_Trump">Search a topic and dynamically deliver a word map visualization. /twitter/wordmap/:topic</a><br>
-      <p>Put topic into website list. PUT /focus/:topic &emsp; Delete topic from website list. DELETE /focus/:topic</p><br>
+      <a href="/twitterData/wordmap">Query a large amount of tweets and visualize their words.</a><br>
+
+      <br>
+
       <a href="/count">Get current database status. /count</a> &emsp; <br>
       <a href="/login">Test the login screen and database. /login</a><br>
 
