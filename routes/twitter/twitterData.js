@@ -9,6 +9,7 @@ var cluster = require('./unsupervisedCluster.js');
 var d3Visualization = require('./d3-visualization.js');
 
 var DEFAULT_QUERY_LIMIT = 500;
+var LARGE_QUERY_LIMIT = 20000;
 
 //TODO: Merge all the query tweets async/promises into a uniform method for querying tweets,
 //and then custom callbacks to handle the results differently per use case.
@@ -238,6 +239,41 @@ function queryData(query, response, outputMode) {
     }
   });
 }
+
+
+function queryLotsOfTweets(response) {
+  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  var query = {};
+  async.waterfall([
+    function(next) {
+      connectToTweetData(next);
+    },
+    function(client, next) { //Find a not random subsampling of tweets to show
+      var dbase = client.db("testForAuth");
+      dbase.collection("tweets").find(query, dataInclude).limit(LARGE_QUERY_LIMIT).toArray(function(err, sampleTweets) {
+        if (err) throw err;
+        client.close();
+        next(null, sampleTweets);
+      });
+    }
+  ], function(err, sampleTweets) {
+    if (err) {
+      console.log(err);
+    }
+    var tweetStrings = [];
+    for (var tweet of sampleTweets) {
+      tweetStrings.push(tweet["text"]);
+    }
+    var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings, 4); //Get the word count of all words
+    response.render('tweetWordCount', {wordCounts: JSON.stringify(wordCounts)});
+  });
+}
+
+
+router.get('/wordmap', function(req, res, next) {
+  queryLotsOfTweets(res);
+});
+
 
 //Test querying the database by time; get most recent tweets
 //i.e. /twitterData/recent
