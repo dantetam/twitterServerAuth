@@ -9,7 +9,7 @@ var cluster = require('./unsupervisedCluster.js');
 var d3Visualization = require('./d3-visualization.js');
 
 var DEFAULT_QUERY_LIMIT = 500;
-var LARGE_QUERY_LIMIT = 20000;
+var LARGE_QUERY_LIMIT = 10000;
 
 //TODO: Merge all the query tweets async/promises into a uniform method for querying tweets,
 //and then custom callbacks to handle the results differently per use case.

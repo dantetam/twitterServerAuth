@@ -50,8 +50,11 @@ var self = module.exports = {
       if (token.indexOf("...") !== -1 || token.indexOf("https") !== -1 || token.indexOf("@") !== -1 || token.length == 0 || stopWordsDict[token]) {
         tokens.splice(i, 1);
       }
-      token.replace(/[^a-z0-9 ]/g, " ");
-      token.replace(/\r?\n|\r/g, " ");
+      else {
+        tokens[i] = tokens[i].replace(/[^a-z0-9]/g, "");
+        tokens[i] = tokens[i].replace(/[ ]/g, "");
+        tokens[i] = tokens[i].replace(/\r?\n|\r/g, " ");
+      }
     }
     return tokens;
   },
@@ -127,6 +130,9 @@ var self = module.exports = {
       for (var j = 0; j < listTokens.length; j++) {
         var token = listTokens[j];
         //token = stemmer.stemWord(token);
+        if (!self.wordAllowed(token)) {
+          continue;
+        }
         if (!(results.hasOwnProperty(token))) {
           results[token] = 0;
         }
@@ -148,6 +154,10 @@ var self = module.exports = {
       return b[1] - a[1]; //Sort by word count in descending order
     });
     return listSortedResults;
+  },
+
+  wordAllowed: function(word) {
+    return word.toLowerCase().replace(/[^a-z]/g, "").length > 2;
   },
 
   /*
