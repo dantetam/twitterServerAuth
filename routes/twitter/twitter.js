@@ -262,7 +262,7 @@ function storeTweetsInData(tweetsJson, next) {
 }
 
 
-router.get("/topicclusters", function(req, res, next) {
+router.get("/topicgroups", function(req, res, next) {
   getProperNounsFromTweets(null);
 
   res.send("The server chose a topic to test topic associations.");

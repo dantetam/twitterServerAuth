@@ -257,6 +257,37 @@ var self = {
   },
 
   /**
+  This is a modified calculation of Shannon entropy, a general measure of "species" similiarity/homogeneity within a population.
+  Its equation is exp( \sum_i p_i ln p_i ) where p_i is the proportion of objects belonging to the ith cluster.
+
+  This has been modified to deal with clusters that may overlap. In that case, every unique object contributes a weight of 1
+  to both the total and the cluster proportions (weighted by occurrence). i.e. [1, 2] [1, 3, 4] -> p_1 = (0.5 + 1) / 4, p_2 = (0.5 + 1 + 1) / 4,
+  then S = exp(0.375 ln 0.375 + 0.625 ln 0.625).
+  */
+  modifiedShannonIndex: function(clusters) {
+    var counts = {};
+    var uniqueItemsCount = 0;
+    for (var cluster of clusters) {
+      for (var item of cluster) {
+        if (counts[item] === undefined) {
+          counts[item] = 0;
+          uniqueItemsCount++;
+        }
+        counts[item]++;
+      }
+    }
+    var result = 0;
+    for (var cluster of clusters) {
+      var clusterWeight = 0;
+      for (var item of cluster) {
+        clusterWeight += 1 / counts[item];
+      }
+      result += clusterWeight * Math.log(clusterWeight);
+    }
+    return Math.exp(-result);
+  },
+
+  /**
   Measure the group diversity/similiarity index of a group of tweets.
   Ideally the tweets only contain important content words and proper nouns.
   */
