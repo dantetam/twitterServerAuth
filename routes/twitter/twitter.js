@@ -196,15 +196,15 @@ function getProperNounsFromTweets(next) {
       var tweetStrings = parseTweets(body);
       var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
       //console.log(properNounTokens);
-      var result = cluster.testProperNounTopicGrouping(properNounTokens);
-      next(null, result);
+      var clusters = cluster.testProperNounTopicGrouping(properNounTokens);
+      next(null, tweetStrings, clusters);
     }
-  ], function(err, result) {
+  ], function(err, tweetStrings, clusters) {
     if (err) {
       console.log(err);
     }
     if (next) {
-      next(result);
+      next(null, tweetStrings, clusters);
     }
   });
 }
@@ -263,9 +263,20 @@ function storeTweetsInData(tweetsJson, next) {
 
 
 router.get("/topicgroups", function(req, res, next) {
-  getProperNounsFromTweets(null);
-
-  res.send("The server chose a topic to test topic associations.");
+  getProperNounsFromTweets(function(err, tweetsTextArr, clusters) {
+    var result = [];
+    for (var i = 0; i < clusters.length; i++) {
+      var clusterString = "Cluster " + i + ": ";
+      for (var j = 0; j < clusters[i].points.length; j++) {
+        var index = clusters[i].points[j];
+        clusterString += tweetsTextArr[index] + "\\n";
+      }
+      result.push(clusterString);
+    }
+    res.send(result);
+    //res.write(JSON.stringify(result));
+    //res.end("The server chose a topic to test topic associations.");
+  });
 });
 
 
