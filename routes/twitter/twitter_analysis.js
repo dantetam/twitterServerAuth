@@ -62,6 +62,22 @@ var self = module.exports = {
     return tokens;
   },
 
+  /*
+  Takes in an array of tweets, and returns an array of an array of tokens
+  */
+  sanitizeTweets: function(tweetsArr) {
+    var results = [];
+    for (var i = 0; i < tweetsArr.length; i++) {
+      results.push(self.sanitizeTweet(tweetsArr[i]));
+    }
+    return results;
+  },
+
+  wordAllowed: function(word) {
+    return word.toLowerCase().replace(/[^a-z]/g, "").length > 2;
+  },
+
+  /*
   removeStopWords: function(doubleArrTokens) {
     var stopWordsDict = self.getStopWords();
     for (var arrTokens of doubleArrTokens) {
@@ -73,6 +89,7 @@ var self = module.exports = {
     }
     return doubleArrTokens;
   },
+  */
 
   findAllProperNouns: function(doubleArrTokens) {
     var notNamedEntity = function(word) {
@@ -87,17 +104,6 @@ var self = module.exports = {
       }
     }
     return doubleArrTokens;
-  },
-
-  /*
-  Takes in an array of tweets, and returns an array of an array of tokens
-  */
-  sanitizeTweets: function(tweetsArr) {
-    var results = [];
-    for (var i = 0; i < tweetsArr.length; i++) {
-      results.push(self.sanitizeTweet(tweetsArr[i]));
-    }
-    return results;
   },
 
   /**
@@ -159,11 +165,7 @@ var self = module.exports = {
     return listSortedResults;
   },
 
-  wordAllowed: function(word) {
-    return word.toLowerCase().replace(/[^a-z]/g, "").length > 2;
-  },
-
-  /*
+  /**
   The public facing method for taking in an array of tweet strings, direcrly from the JSON callback,
   and returning a list of words by count.
   */
@@ -173,8 +175,36 @@ var self = module.exports = {
     return tweetsWordCount;
   },
 
+  /**
+  The public facing method for finding proper nouns from an array of text (condensing the token retrieval and rejection part)
+  */
   findProperNounsFromStrings: function(tweetsArr) {
     return self.findAllProperNouns(self.sanitizeTweets(tweetsArr));
   },
+
+  /**
+  A utility method: given an array of tweets either indexed as
+  ["text1", "text2", ...] or
+  [{"text": ...}, {"text": ...}, ...],
+  and given an array of clusters, represented as [[tweetId1, tweetId2, ...], [tweetId1, tweetId3, ...]],
+  return a formatting of the clusters, for human reading.
+  */
+  stringifyClustersTweets: function(tweetsTextArr, clusters) {
+    var result = [];
+    for (var i = 0; i < clusters.length; i++) {
+      var clusterString = "Cluster " + i + ": ";
+      for (var j = 0; j < clusters[i].points.length; j++) {
+        var index = clusters[i].points[j];
+        if (tweetsTextArr[index]["text"] !== undefined) {
+          clusterString += tweetsTextArr[index]["text"] + "\\n";
+        }
+        else {
+          clusterString += tweetsTextArr[index] + "\\n";
+        }
+      }
+      result.push(clusterString);
+    }
+    return result;
+  }
 
 };

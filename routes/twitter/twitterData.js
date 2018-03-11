@@ -29,7 +29,14 @@ function testVisual(response) {
   d3Visualization.testVisualization(response);
 }
 
-
+/**
+Initiate the following async waterfall:
+connect to the MongoDB hosting server;
+search for distinct tweets based on a query;
+get the proper nouns from the tweets;
+cluster the tweets by the proper noun tokens;
+and finally, send the clusters in a pretty string format to the response.
+*/
 function queryTweetsTopicGrouping(beginDate, endDate, response) {
   var query = {};
   var dataInclude = {author: 1, text: 1, creationTime: 1};
@@ -60,21 +67,20 @@ function queryTweetsTopicGrouping(beginDate, endDate, response) {
       next(null, tweetsTextArr, result);
     }
   ], function(err, tweetsTextArr, clusters) {
-    var result = [];
-    for (var i = 0; i < clusters.length; i++) {
-      var clusterString = "Cluster " + i + ": ";
-      for (var j = 0; j < clusters[i].points.length; j++) {
-        var index = clusters[i].points[j];
-        clusterString += tweetsTextArr[index] + "\\n";
-      }
-      result.push(clusterString);
-    }
+    var result = twitterAnalysis.stringifyClustersTweets(tweetsTextArr, clusters);
     response.send(result);
   });
-
 }
 
 
+/**
+Initiate the following async waterfall:
+connect to the MongoDB hosting server;
+search for distinct tweets based on a query;
+get the sanitized tweet in the form of tokens;
+cluster the tweets by the raw tokens;
+and finally, send the clusters in a pretty string format to the response.
+*/
 function queryTweetsCluster(queryString, beginDate, endDate, response) {
   var query = {};
   var dataInclude = {author: 1, text: 1, creationTime: 1};
@@ -106,20 +112,19 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
       cluster.testCluster(tweetArrTokens, next);
     }
   ], function(err, clusters) {
-    var result = [];
-    for (var i = 0; i < clusters.length; i++) {
-      var clusterString = "Cluster " + i + ": ";
-      for (var j = 0; j < clusters[i].points.length; j++) {
-        var index = clusters[i].points[j];
-        clusterString += collectedSampleTweets[index] + "\\n";
-      }
-      result.push(clusterString);
-    }
+    var result = twitterAnalysis.stringifyClustersTweets(collectedSampleTweets, clusters);
     response.send(result);
   });
 }
 
-
+/**
+Initiate the following async waterfall:
+connect to the MongoDB hosting server;
+search for all tweets within the given times;
+get the sanitized tweet in the form of tokens;
+use an MST algorithm and a distance metric to create edges of a tree;
+and send the tree in a stringified format to the response.
+*/
 function queryTweetsMst(queryString, beginDate, endDate, response) {
   var query = {};
   var dataInclude = {author: 1, text: 1, creationTime: 1};
@@ -139,11 +144,23 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db("testForAuth");
+      /*
       dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
         if (err) throw err;
         collectedSampleTweets = sampleTweets;
         next(null, sampleTweets);
       });
+      */
+      Tweet.aggregate(
+          [
+              {$project: {_id: 1, text: 1}},
+              {"$limit": 500}
+          ],
+          function(err, results) {
+              collectedSampleTweets = results; //Store results for later use out of scope
+              next(null, results);
+          }
+      );
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       var tweetsTextArr = [];
@@ -160,11 +177,9 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
     var result = [];
     for (var i = 0; i < mst.length; i++) {
       var edgeString = "Edge " + i + ": ";
-      for (var j = 0; j < mst[i].length; j++) {
-        var firstIndex = mst[i][0];
-        var secondIndex = mst[i][1];
-        edgeString += collectedSampleTweets[firstIndex]["text"] + " <-------> " + collectedSampleTweets[secondIndex]["text"];
-      }
+      var firstIndex = mst[i][0];
+      var secondIndex = mst[i][1];
+      edgeString += collectedSampleTweets[firstIndex]["text"] + " <-------> " + collectedSampleTweets[secondIndex]["text"];
       result.push(edgeString);
     }
 
@@ -186,7 +201,11 @@ function queryDataSearchParam(queryString, beginDate, endDate, response, outputM
   queryData(query, response, outputMode);
 }
 
-
+/**
+Query up some recently stored tweets according to the parameters of the query,
+and send these tweets to the response. The output mode defaults to JSON,
+with an option for text.
+*/
 function queryData(query, response, outputMode) {
   var dataInclude = {author: 1, text: 1, creationTime: 1};
 

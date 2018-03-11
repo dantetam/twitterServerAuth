@@ -238,7 +238,8 @@ function getWordImportanceInTopic(tweetStrings, specialWord) {
 }
 
 /*
-Take the JSON data of the retrieved tweets and store them into the MongoDB database
+Take the JSON data of the retrieved tweets and store them into the MongoDB database,
+using the Tweet schema defined in "/models/tweet.js".
 */
 function storeTweetsInData(tweetsJson, next) {
   var results = [];
@@ -264,15 +265,7 @@ function storeTweetsInData(tweetsJson, next) {
 
 router.get("/topicgroups", function(req, res, next) {
   getProperNounsFromTweets(function(err, tweetsTextArr, clusters) {
-    var result = [];
-    for (var i = 0; i < clusters.length; i++) {
-      var clusterString = "Cluster " + i + ": ";
-      for (var j = 0; j < clusters[i].points.length; j++) {
-        var index = clusters[i].points[j];
-        clusterString += tweetsTextArr[index] + "\\n";
-      }
-      result.push(clusterString);
-    }
+    var result = twitterAnalysis.stringifyClustersTweets(tweetsTextArr, clusters);
     res.send(result);
     //res.write(JSON.stringify(result));
     //res.end("The server chose a topic to test topic associations.");
