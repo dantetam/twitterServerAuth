@@ -195,7 +195,7 @@ function getProperNounsFromTweets(next) {
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
       var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
-      console.log(properNounTokens);
+      //console.log(properNounTokens);
       var result = cluster.testProperNounTopicGrouping(properNounTokens);
       next(null, result);
     }
@@ -203,7 +203,6 @@ function getProperNounsFromTweets(next) {
     if (err) {
       console.log(err);
     }
-    console.log(result)
     if (next) {
       next(result);
     }

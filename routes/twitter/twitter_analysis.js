@@ -21,7 +21,8 @@ var self = module.exports = {
     "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "same", "she", "she'd", "she'll", "she's", "should", "so", "some", "such", "than", "that", "that's",
     "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "through",
     "to", "too", "under", "until", "up", "very", "was", "we", "we'd", "we'll", "we're", "we've", "were", "what", "what's", "when", "when's", "where", "where's",
-    "which", "while", "who", "who's", "whom", "why", "why's", "with", "would", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves" ];
+    "which", "while", "who", "who's", "whom", "why", "why's", "with", "would", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves",
+    "rt"];
     var result = {};
     for (var word of data) {
       result[word] = true;
@@ -47,13 +48,15 @@ var self = module.exports = {
     //Go backwards since we are removing elements, arraylist trap
     for (var i = tokens.length - 1; i >= 0; i--) {
       var token = tokens[i];
-      if (token.indexOf("...") !== -1 || token.indexOf("https") !== -1 || token.indexOf("@") !== -1 || token.length == 0 || stopWordsDict[token]) {
+      if (token.indexOf("...") !== -1 || token.indexOf("https") !== -1 || token.indexOf("@") !== -1) {
         tokens.splice(i, 1);
+        continue;
       }
-      else {
-        tokens[i] = tokens[i].replace(/[^a-z0-9]/g, "");
-        tokens[i] = tokens[i].replace(/[ ]/g, "");
-        tokens[i] = tokens[i].replace(/\r?\n|\r/g, " ");
+      tokens[i] = tokens[i].replace(/[^a-z0-9]/g, "");
+      tokens[i] = tokens[i].replace(/[ ]/g, "");
+      tokens[i] = tokens[i].replace(/\r?\n|\r/g, " ");
+      if (token.length === 0 || stopWordsDict[token]) {
+        tokens.splice(i, 1);
       }
     }
     return tokens;

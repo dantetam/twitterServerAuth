@@ -14,7 +14,7 @@ var async = require("async");
 var word2vecDir = "./word2vec/";
 
 var DEFAULT_THRESHOLD_SIMILARITY = 3.5;
-var DEFAULT_TOPIC_MATCHING_LIMIT = 0.3;
+var DEFAULT_TOPIC_MATCHING_LIMIT = 0.45;
 
 var self = {
 

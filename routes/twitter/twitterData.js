@@ -46,28 +46,26 @@ function queryTweetsTopicGrouping(beginDate, endDate, response) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db("testForAuth");
-      dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
+      Tweet.find().distinct('text', query, function(err, tweetsTextArr) { //Instead of returning the full tweet objects,
+        //the callback result 'tweetsTextArr' is an array of strings (tweets).
         if (err) throw err;
-        next(null, sampleTweets);
+        next(null, tweetsTextArr);
       });
     },
-    function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
-      var tweetsTextArr = [];
-      for (var tweet of sampleTweets) {
-        tweetsTextArr.push(tweet["text"]);
-      }
+    function(tweetsTextArr, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
+      //And also parse the tokens and keep only proper nouns for the clustering algorithm
       var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetsTextArr);
+      console.log(properNounTokens);
       var result = cluster.testProperNounTopicGrouping(properNounTokens);
-      next(null, sampleTweets, result);
+      next(null, tweetsTextArr, result);
     }
-  ], function(err, sampleTweets, clusters) {
-    console.log(clusters);
+  ], function(err, tweetsTextArr, clusters) {
     var result = [];
     for (var i = 0; i < clusters.length; i++) {
       var clusterString = "Cluster " + i + ": ";
       for (var j = 0; j < clusters[i].points.length; j++) {
         var index = clusters[i].points[j];
-        clusterString += sampleTweets[index]["text"] + "\\n";
+        clusterString += tweetsTextArr[index] + "\\n";
       }
       result.push(clusterString);
     }
@@ -96,31 +94,24 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db("testForAuth");
-      dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
+      Tweet.find().distinct('text', query, function(err, sampleTweets) { //Instead of returning the full tweet objects,
+        //the callback result 'sampleTweets' is an array of strings (tweets).
         if (err) throw err;
         collectedSampleTweets = sampleTweets;
         next(null, sampleTweets);
       });
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
-      var tweetsTextArr = [];
-      for (var tweet of sampleTweets) {
-        tweetsTextArr.push(tweet["text"]);
-      }
-      var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetsTextArr);
-      next(null, tweetArrTokens);
-    },
-    function(tweetArrTokens, next) { //Use the Twitter analysis to convert word tokens -> vector embeddings -> clusters.
+      var tweetArrTokens = twitterAnalysis.sanitizeTweets(sampleTweets);
       cluster.testCluster(tweetArrTokens, next);
     }
   ], function(err, clusters) {
-    console.log(clusters);
     var result = [];
     for (var i = 0; i < clusters.length; i++) {
       var clusterString = "Cluster " + i + ": ";
       for (var j = 0; j < clusters[i].points.length; j++) {
         var index = clusters[i].points[j];
-        clusterString += collectedSampleTweets[index]["text"] + "\\n";
+        clusterString += collectedSampleTweets[index] + "\\n";
       }
       result.push(clusterString);
     }
