@@ -182,7 +182,7 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
 }
 
 
-function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, response) {
+function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) {
   var query = {};
   var dataInclude = {author: 1, text: 1, creationTime: 1};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
@@ -203,7 +203,8 @@ function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, respon
       var dbase = client.db("testForAuth");
       Tweet.aggregate(
           [
-              {$project: {_id: 1, text: 1}}
+              {$project: {_id: 1, text: 1}},
+              {$match: query},
           ],
           function(err, results) {
               collectedSampleTweets = results; //Store results for later use out of scope
@@ -227,7 +228,10 @@ function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, respon
     if (err) {
       throw err;
     }
-    response.send(result);
+    //response.send(result);
+    if (next) {
+      next(null, result);
+    }
   });
 }
 
@@ -321,6 +325,21 @@ function queryLotsOfTweets(response) {
     response.render('tweetWordCount', {wordCounts: JSON.stringify(wordCounts)});
   });
 }
+
+
+router.get('/wordlookup/:searchTweetWord/:inspectWord', function(req, res, next) {
+  var queryString = req.params["searchTweetWord"];
+  var inspectWord = req.params["inspectWord"];
+
+  var currentDate = new Date();
+  var previousDate = new Date();
+  previousDate.setHours(currentDate.getHours() - 24);
+
+  var callback = function(err, bigramCounts) {
+    res.send(bigramCounts);
+  };
+  queryTweetsPredict(queryString, inspectWord, previousDate, currentDate, callback);
+});
 
 
 router.get('/wordmap', function(req, res, next) {
