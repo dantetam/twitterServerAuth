@@ -222,6 +222,7 @@ function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) 
     },
     function(tweetArrTokens, next) { //Use the Twitter analysis to convert word tokens -> vector embeddings -> clusters.
       var bigramCounts = twitterAnalysis.bigramCounter(tweetArrTokens, inspectWord);
+      console.log(bigramCounts);
       next(null, bigramCounts);
     }
   ], function(err, result) {
@@ -331,14 +332,16 @@ router.get('/wordlookup/:searchTweetWord/:inspectWord', function(req, res, next)
   var queryString = req.params["searchTweetWord"];
   var inspectWord = req.params["inspectWord"];
 
+  /*
   var currentDate = new Date();
   var previousDate = new Date();
   previousDate.setHours(currentDate.getHours() - 24);
+  */
 
   var callback = function(err, bigramCounts) {
     res.send(bigramCounts);
   };
-  queryTweetsPredict(queryString, inspectWord, previousDate, currentDate, callback);
+  queryTweetsPredict(queryString, inspectWord, null, null, callback);
 });
 
 

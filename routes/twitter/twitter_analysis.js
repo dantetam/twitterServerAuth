@@ -130,11 +130,12 @@ var self = module.exports = {
 
 
   bigramCounter: function(doubleArrTokens, inspectWord) {
+    var insWordLower = inspectWord.trim().toLowerCase();
     var counts = {};
     for (var arrTokens of doubleArrTokens) {
       for (var i = 0; i < arrTokens.length - 1; i++) {
         var nextWord = arrTokens[i+1];
-        if (arrTokens[i] === inspectWord) {
+        if (arrTokens[i] === insWordLower) {
           if (counts[nextWord] === undefined) {
             counts[nextWord] = 0;
           }
