@@ -268,7 +268,7 @@ var self = {
     var counts = {};
     var uniqueItemsCount = 0;
     for (var cluster of clusters) {
-      for (var item of cluster) {
+      for (var item of cluster["points"]) {
         if (counts[item] === undefined) {
           counts[item] = 0;
           uniqueItemsCount++;
@@ -279,7 +279,7 @@ var self = {
     var result = 0;
     for (var cluster of clusters) {
       var clusterWeight = 0;
-      for (var item of cluster) {
+      for (var item of cluster["points"]) {
         clusterWeight += 1 / counts[item];
       }
       result += clusterWeight * Math.log(clusterWeight);
@@ -306,6 +306,8 @@ var self = {
   testCluster: function(doubleArrTokens, next) {
     var callback = function(err, sentenceVectors) {
       var clusters = self.approxCluster(sentenceVectors, self.sentenceSimilarity, function(x) {return x < DEFAULT_THRESHOLD_SIMILARITY;});
+      var diversity = self.modifiedShannonIndex(clusters);
+      console.log("Shannon Diversity Index: " + diversity);
       if (next) next(null, clusters);
     }
     self.sentenceGroupGetVectors(doubleArrTokens, callback);
@@ -387,7 +389,7 @@ var self = {
             fringe.push(newNode);
           }
         }
-        console.log(cluster.points);
+        //console.log(cluster.points);
         clusters.push(cluster);
       }
 
@@ -402,7 +404,7 @@ var self = {
           var matchingNum = matchingData["matchingNum"];
           var percentMatch = matchingNum / Math.min(clusters[i].points.length, clusters[j].points.length);
           if (percentMatch >= 0.6) {
-            console.log("Merging " + i + " : " + j)
+            //console.log("Merging " + i + " : " + j)
             for (var otherIndex of clusters[j].points) {
               if (matchingObj[otherIndex] === true) {
                 continue;

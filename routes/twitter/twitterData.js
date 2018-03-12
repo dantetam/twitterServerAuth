@@ -144,13 +144,6 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db("testForAuth");
-      /*
-      dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
-        if (err) throw err;
-        collectedSampleTweets = sampleTweets;
-        next(null, sampleTweets);
-      });
-      */
       Tweet.aggregate(
           [
               {$project: {_id: 1, text: 1}},
@@ -184,6 +177,56 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
     }
 
     //result.push("MST contains cycle: " + cluster.graphContainsCycle(mst));
+    response.send(result);
+  });
+}
+
+
+function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, response) {
+  var query = {};
+  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
+  if (beginDate && endDate) {
+    query['creationTime'] = {
+      $gte: new Date(beginDate),
+      $lt: new Date(endDate)
+    };
+  }
+
+  var collectedSampleTweets = null;
+
+  async.waterfall([
+    function(next) {
+      connectToTweetData(next);
+    },
+    function(client, next) { //Find a not random subsampling of tweets to show
+      var dbase = client.db("testForAuth");
+      Tweet.aggregate(
+          [
+              {$project: {_id: 1, text: 1}}
+          ],
+          function(err, results) {
+              collectedSampleTweets = results; //Store results for later use out of scope
+              next(null, results);
+          }
+      );
+    },
+    function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
+      var tweetsTextArr = [];
+      for (var tweet of sampleTweets) {
+        tweetsTextArr.push(tweet["text"]);
+      }
+      var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetsTextArr);
+      next(null, tweetArrTokens);
+    },
+    function(tweetArrTokens, next) { //Use the Twitter analysis to convert word tokens -> vector embeddings -> clusters.
+      var bigramCounts = twitterAnalysis.bigramCounter(tweetArrTokens, inspectWord);
+      next(null, bigramCounts);
+    }
+  ], function(err, result) {
+    if (err) {
+      throw err;
+    }
     response.send(result);
   });
 }

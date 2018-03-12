@@ -129,6 +129,23 @@ var self = module.exports = {
   },
 
 
+  bigramCounter: function(doubleArrTokens, inspectWord) {
+    var counts = {};
+    for (var arrTokens of doubleArrTokens) {
+      for (var i = 0; i < arrTokens.length - 1; i++) {
+        var nextWord = arrTokens[i+1];
+        if (arrTokens[i] === inspectWord) {
+          if (counts[nextWord] === undefined) {
+            counts[nextWord] = 0;
+          }
+          counts[nextWord]++;
+        }
+      }
+    }
+    return counts;
+  },
+
+
   /*
   Takes in an array of an array of tokens, and returns a sorted list of 'dictionary' entries indexed by [word, count]
   */
