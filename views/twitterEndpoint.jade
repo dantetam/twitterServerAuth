@@ -1,14 +1,25 @@
 block content
   h1 Dante Tam
-  footer
-    p Hello, this is a Node/Express server, work in progress.
-    p.
-      This is the endpoint for the Twitter server, which connects to the RESTful Twitter Search API, 
-      as well as the socket.io connection on this server, to deliver live tweet updates to this webpage.
-    br
-    p The server is processing a chosen topic.
+  p Hello, this is a Node/Express server, work in progress.
+  p.
+    This is the endpoint for the Twitter server, which connects to the RESTful Twitter Search API, 
+    as well as the socket.io connection on this server, to deliver live tweet updates to this webpage.
+  br
+  p The server is processing a chosen topic.
+  div(id="tweets")
   br
   br
+  //JQuery and socket.io libraries
+  script(src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js")
+  script(src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js")
   script(src="/js/lib/socket.io.js")
   script.
-    io.connect('http://localhost:3000', {reconnect: true});
+    var socket = io.connect('http://localhost:3000', {reconnect: true});
+    socket.on("/twitter/", function(data) {
+      console.log(data);
+      var tweetHtml = "Updated last at " + (new Date()).toString() + "<br>";
+      for (var i = 0; i < data.tweets.length; i++) {
+        tweetHtml += data.tweets[i] + "<br>";
+      }
+      $("#tweets").html(tweetHtml);
+    });

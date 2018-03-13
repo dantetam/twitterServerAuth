@@ -15,8 +15,9 @@ var focusTopicsCountMax = 25;
 
 
 router.connectToSocket = function(socket, io) {
+  console.log("Connection established between: twitter router, and socket io client");
   router.sendTweetsSocketMsg = function(tweets) {
-    io.sockets.emit('/twitter/', {
+    socket.emit('/twitter/', {
       "tweets": tweets
     });
   }
@@ -174,14 +175,14 @@ function getTweetsWithTrendingTopic(word, next) {
       storeTweetsInData(body, next);
       getWordImportanceInTopic(tweetStrings, null);
 
-      next(null, null);
+      next(null, tweetStrings);
     }
   ], function(err, result) {
     if (err) {
       console.log(err);
     }
     if (next) {
-      next(result);
+      next(null, result);
     }
   });
 }
