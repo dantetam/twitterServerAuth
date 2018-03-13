@@ -48,7 +48,7 @@ var self = module.exports = {
     //Go backwards since we are removing elements, arraylist trap
     for (var i = tokens.length - 1; i >= 0; i--) {
       var token = tokens[i];
-      if (token.indexOf("...") !== -1 || token.indexOf("https") !== -1 || token.indexOf("@") !== -1) {
+      if (token.indexOf("...") !== -1 || token.indexOf("https") !== -1 || token.indexOf("@") !== -1 || token.indexOf("rt") !== -1) {
         tokens.splice(i, 1);
         continue;
       }
@@ -143,7 +143,7 @@ var self = module.exports = {
         }
       }
     }
-    return counts;
+    return self.sortDictIntoList(counts, 3);
   },
 
 
@@ -166,22 +166,10 @@ var self = module.exports = {
         results[token]++;
       }
     }
-    var listSortedResults = [];
-    for (var word in results) {
-      if (results.hasOwnProperty(word)) {
-        if (results[word] < cutoffCountInc) {
-          delete results[word];
-        }
-        else {
-          listSortedResults.push([word, results[word]]);
-        }
-      }
-    }
-    listSortedResults.sort(function(a, b) {
-      return b[1] - a[1]; //Sort by word count in descending order
-    });
+    var listSortedResults = self.sortDictIntoList(results, cutoffCountInc);
     return listSortedResults;
   },
+
 
   /**
   The public facing method for taking in an array of tweet strings, direcrly from the JSON callback,
@@ -223,6 +211,25 @@ var self = module.exports = {
       result.push(clusterString);
     }
     return result;
+  },
+
+
+  sortDictIntoList: function(dictionary, cutoffCountInc = 5) {
+    var listSortedResults = [];
+    for (var word in dictionary) {
+      if (dictionary.hasOwnProperty(word)) {
+        if (dictionary[word] < cutoffCountInc) {
+          delete dictionary[word];
+        }
+        else {
+          listSortedResults.push([word, dictionary[word]]);
+        }
+      }
+    }
+    listSortedResults.sort(function(a, b) {
+      return b[1] - a[1]; //Sort by word count in descending order
+    });
+    return listSortedResults;
   }
 
 };
