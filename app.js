@@ -1,5 +1,8 @@
 var express = require('express');
 var app = express();
+var server = require('http').createServer(app);
+var io = require('socket.io')(server);
+
 var path = require('path');
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
@@ -63,6 +66,26 @@ app.use(function (err, req, res, next) {
 
 
 // listen on port 3000
+/*
 app.listen(port, function () {
   console.log('Express app listening on port 3000');
+});
+*/
+server.listen(port);
+
+//Setup socket.io live client-server communication
+/*
+io.on('connection', function(socket) {
+
+    console.log('Client connected.');
+
+    // Disconnect listener
+    socket.on('disconnect', function() {
+        console.log('Client disconnected.');
+    });
+});
+*/
+
+io.sockets.on('connection', function (sock) {
+  twitterRoutes.connectToSocket(sock, io);
 });

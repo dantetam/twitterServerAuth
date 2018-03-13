@@ -1,0 +1,14 @@
+block content
+  h1 Dante Tam
+  footer
+    p Hello, this is a Node/Express server, work in progress.
+    p.
+      This is the endpoint for the Twitter server, which connects to the RESTful Twitter Search API, 
+      as well as the socket.io connection on this server, to deliver live tweet updates to this webpage.
+    br
+    p The server is processing a chosen topic.
+  br
+  br
+  script(src="/js/lib/socket.io.js")
+  script.
+    io.connect('http://localhost:3000', {reconnect: true});

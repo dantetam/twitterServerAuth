@@ -13,6 +13,16 @@ var siteData = require("./storedTwitterConfig.js");
 
 var focusTopicsCountMax = 25;
 
+
+router.connectToSocket = function(socket, io) {
+  router.sendTweetsSocketMsg = function(tweets) {
+    io.sockets.emit('/twitter/', {
+      "tweets": tweets
+    });
+  }
+}
+
+
 /*
 Fix and modularize these callbacks so they form a neat queue and final callback to render the website
 */
@@ -354,11 +364,19 @@ router.get('/', function(req, res, next) {
     tweets: ['No tweets yet. Input a topic such as /twitter/California']
   });
   */
+
+  var tweetsCallback = function(err, result) {
+    if (router.sendTweetsSocketMsg !== undefined) {
+      router.sendTweetsSocketMsg(result);
+    }
+  }
+
   Repeat(function() {
-    getTweetsWithTrendingTopic(null, null);
+    getTweetsWithTrendingTopic(null, tweetsCallback);
   }).every(1000 * 60 * 1, 'ms').start.now();
 
-  res.send("The server is processing a chosen topic.");
+  //res.send("The server is processing a chosen topic.");
+  res.render('twitterEndpoint', {});
 });
 
 module.exports = router;
