@@ -374,7 +374,7 @@ router.get('/', function(req, res, next) {
 
   Repeat(function() {
     getTweetsWithTrendingTopic(null, tweetsCallback);
-  }).every(1000 * 60 * 1, 'ms').start.now();
+  }).every(1000 * 30 * 1, 'ms').start.now();
 
   //res.send("The server is processing a chosen topic.");
   res.render('twitterEndpoint', {});
