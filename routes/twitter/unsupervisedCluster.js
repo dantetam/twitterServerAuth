@@ -207,11 +207,12 @@ var self = {
 
     let success = false;
 
+    //Note that the VADER sentiment file is formatted with tabs
     lineReader.on('line', function (line) {
-      if (line.startsWith(word + " ")) { //We are looking for just the word, not words with matching prefixes
+      if (line.startsWith(word + "\t")) { //We are looking for just the word, not words with matching prefixes
         //Succeeded, parse line into an array of numbers, call callback
         var vectorString = line.substring(word.length + 1).trim();
-        var tokens = vectorString.split(" ");
+        var tokens = vectorString.split("\t");
         var vector = [+tokens[0], +tokens[1]];
         success = true;
         lineReader.close();
@@ -245,6 +246,7 @@ var self = {
       vecLookups,
       function(err, vectors) { //Final callback after parallel execution
         if (err) throw err;
+        console.log(vectors);
         for (var i = vectors.length - 1; i >= 0; i--) {
           if (vectors[i] === null) {
             vectors.splice(i, 1);
@@ -271,9 +273,28 @@ var self = {
       vecLookups,
       function(err, sentenceVectors) { //Final callback after parallel execution
         if (err) throw err;
-        next(null, sentenceVectors);
+        var results = {polarity: [], intensity: []};
+        for (var sentenceVector of sentenceVectors) {
+          var averagedSentiment = 0;
+          var totalWeights = 0;
+          for (var wordVector of sentenceVector) {
+            averagedSentiment += wordVector[0] * wordVector[1];
+            totalWeights += wordVector[1];
+          }
+          var weightedAvg = 0;
+          if (totalWeights > 0) weightedAvg = averagedSentiment / totalWeights;
+          var avgIntensity = totalWeights / sentenceVector.length;
+          results.polarity.push(weightedAvg);
+          results.intensity.push(avgIntensity);
+        }
+        next(null, results);
       }
     );
+  },
+
+  testSentiment: function(doubleArrSentenceTokens) {
+    var callback = function(err, results) {console.log(results);}
+    self.sentenceGroupGetSentiment(doubleArrSentenceTokens, callback);
   },
 
   //Compute the overlap similiarity score of two possibly unequal length vectors
@@ -598,5 +619,11 @@ var self = {
 //self.testCluster([["sentence", "prefix", "preempt", "preserve"], ["another", "sentence"], ["sentence", "prevent", "stop"], ["unrelated", "melon", "kiwi"]]);
 
 //self.testCluster([["apple", "orange", "banana"], ["apple", "tangerine", "grape"], ["bird", "raven", "crow"], ["pigeon", "seagull", "albatross"]], null);
+
+self.testSentiment([
+  "this is a bad terrible movie".split(" "),
+  "exceedingly terrifying and displeasing".split(" "),
+  "this is as great as a horror movie can be excellent brilliant".split(" ")
+]);
 
 module.exports = self;

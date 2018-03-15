@@ -1,0 +1,1 @@
+The VADER sentiment lexicon file is formatted like a tab-separated value (.tsv) file. This file does not use spaces or commas when separating fields.
