@@ -13,7 +13,7 @@ var d3 = require("d3");
 var self = {
 
   testVisualization: function(res) {
-      jsdom.env({
+      /*
   	    html:'',
   	    features:{ QuerySelector:true }, //you need query selector for D3 to work
   	    done:function(errors, window){
@@ -48,10 +48,10 @@ var self = {
       		//fs.writeFileSync(outputLocation, window.d3.select('.container').html()) //using sync to keep the code simple
 
   	    }
-  	});
 
     res.writeHead(200, {'Content-Type': 'image/svg+xml'})
     res.end(vis.node().innerHTML)
+    */
   }
 
 };
