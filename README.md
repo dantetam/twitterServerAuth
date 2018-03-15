@@ -17,13 +17,6 @@ Starting a Server
 npm start
 ```
 
-
-License
--------
-Original code is licensed under MPL 2.0.
-See the LICENSE file for details.
-
-
 Citations and Attributions
 -------
 1. Hutto, C.J. & Gilbert, E.E. (2014). VADER: A Parsimonious Rule-based Model for Sentiment Analysis of Social Media Text. Eighth International Conference on Weblogs and Social Media (ICWSM-14). Ann Arbor, MI, June 2014. 
@@ -32,8 +25,8 @@ Citations and Attributions
 
 3. Pak, Paroubek. Twitter as a Corpus for Sentiment Analysis and Opinion Mining. Universit ́e de Paris-Sud, Laboratoire LIMSI-CNRS. 2011. &lt; http://web.archive.org/web/20111119181304/http://deepthoughtinc.com/wp-content/uploads/2011/01/Twitter-as-a-Corpus-for-Sentiment-Analysis-and-Opinion-Mining.pdf &gt;
 
-
-
+Footnotes
+-------
 1. The VADER sentiment lexicon dictionary is licensed under the MIT license. See 
 [this GitHub repo](https://github.com/cjhutto/vaderSentiment) for a working Python lookup implementation.
 
