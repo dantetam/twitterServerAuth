@@ -80,7 +80,6 @@ var self = {
       if (line.startsWith(word + " ")) { //We are looking for just the word, not words with matching prefixes
         //Succeeded, parse line into an array of numbers, call callback
         var vectorString = line.substring(word.length + 1).trim();
-        //console.log(">" + vectorString + "<");
         var tokens = vectorString.split(" ");
         var vector = tokens.map(parseFloat);
         success = true;
@@ -426,7 +425,7 @@ var self = {
     var n = sentenceVectors.length; //Number of points
 
     var distMatrix = self.getVecDistMatrix(sentenceVectors, metric);
-    var randomChoicesPerIter = 10;
+    var randomChoicesPerIter = Math.floor(n / 10);
 
     var clusters = [];
     var alreadyChosen = 0;

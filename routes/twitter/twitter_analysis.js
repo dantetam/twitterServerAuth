@@ -91,14 +91,32 @@ var self = module.exports = {
   },
   */
 
+  notNamedEntity: function(word) {
+    var lower = word.toLowerCase();
+    return trieDictionary.findWord(lower) || lower.indexOf("https") !== -1;
+  },
+
   findAllProperNouns: function(doubleArrTokens) {
-    var notNamedEntity = function(word) {
-      var lower = word.toLowerCase();
-      return trieDictionary.findWord(lower) || lower.indexOf("https") !== -1;
-    }
     for (var arrTokens of doubleArrTokens) {
       for (var i = arrTokens.length - 1; i >= 0; i--) { //Go backwards since we remove elements i.e. 'arraylist trap'
-        if (notNamedEntity(arrTokens[i])) { //If the individual token is in the dict of stop words
+        if (self.notNamedEntity(arrTokens[i])) { //If the individual token is in the dict of stop words
+          arrTokens.splice(i, 1);
+        }
+      }
+    }
+    return doubleArrTokens;
+  },
+
+  /**
+  Content words are simply all words
+  that are neither proper nouns,
+  nor stop words.
+  */
+  findAllContentWords: function(doubleArrTokens) {
+    var stopWordsDict = self.getStopWords();
+    for (var arrTokens of doubleArrTokens) {
+      for (var i = arrTokens.length - 1; i >= 0; i--) { //Go backwards since we remove elements i.e. 'arraylist trap'
+        if (!self.notNamedEntity(arrTokens[i]) || stopWordsDict[token]) { //If the individual token is in the dict of stop words
           arrTokens.splice(i, 1);
         }
       }

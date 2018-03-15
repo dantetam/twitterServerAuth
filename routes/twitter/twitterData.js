@@ -100,20 +100,31 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db("testForAuth");
-      Tweet.find().distinct('text', query, function(err, sampleTweets) { //Instead of returning the full tweet objects,
-        //the callback result 'sampleTweets' is an array of strings (tweets).
-        if (err) throw err;
-        collectedSampleTweets = sampleTweets;
-        next(null, sampleTweets);
-      });
+      console.log(query);
+      Tweet.aggregate(
+          [
+              {$match: query},
+              {$project: {_id: 1, text: 1}},
+              {"$limit": DEFAULT_QUERY_LIMIT}
+          ],
+          function(err, sampleTweets) {
+              if (err) throw err;
+              collectedSampleTweets = sampleTweets;
+              var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+              next(null, tweetStrings);
+          }
+      );
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       var tweetArrTokens = twitterAnalysis.sanitizeTweets(sampleTweets);
+      console.log(tweetArrTokens.length);
       cluster.testCluster(tweetArrTokens, next);
     }
   ], function(err, clusters) {
-    var result = twitterAnalysis.stringifyClustersTweets(collectedSampleTweets, clusters);
-    response.send(result);
+    var shannonIndex = cluster.modifiedShannonIndex(clusters);
+    response.write("Modified Shannon Index (Diversity Index): " + shannonIndex + "\n \n \n");
+    var tweetClusters = twitterAnalysis.stringifyClustersTweets(collectedSampleTweets, clusters);
+    response.end(JSON.stringify(tweetClusters));
   });
 }
 
@@ -146,8 +157,9 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
       var dbase = client.db("testForAuth");
       Tweet.aggregate(
           [
+              {$match: query},
               {$project: {_id: 1, text: 1}},
-              {"$limit": 500}
+              {"$limit": DEFAULT_QUERY_LIMIT}
           ],
           function(err, results) {
               collectedSampleTweets = results; //Store results for later use out of scope
@@ -203,8 +215,9 @@ function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) 
       var dbase = client.db("testForAuth");
       Tweet.aggregate(
           [
-              {$project: {_id: 1, text: 1}},
               {$match: query},
+              {$project: {_id: 1, text: 1}},
+              {"$limit": DEFAULT_QUERY_LIMIT}
           ],
           function(err, results) {
               collectedSampleTweets = results; //Store results for later use out of scope
