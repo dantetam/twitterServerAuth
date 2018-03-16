@@ -272,7 +272,7 @@ var self = {
       vecLookups,
       function(err, sentenceVectors) { //Final callback after parallel execution
         if (err) throw err;
-        var results = {polarity: [], intensity: []};
+        var results = {polarity: [], intensity: [], sentenceTokens: doubleArrSentenceTokens};
         for (var sentenceVector of sentenceVectors) {
           var averagedSentiment = 0;
           var totalWeights = 0;

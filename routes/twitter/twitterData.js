@@ -49,12 +49,12 @@ function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db("testForAuth");
-      console.log(query);
+      //console.log(query);
       Tweet.aggregate(
           [
               {$match: query},
               {$project: {_id: 1, text: 1}},
-              {"$limit": DEFAULT_QUERY_LIMIT / 10}
+              {"$limit": DEFAULT_QUERY_LIMIT / 4}
           ],
           function(err, sampleTweets) {
               if (err) throw err;
