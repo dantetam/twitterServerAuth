@@ -246,7 +246,6 @@ var self = {
       vecLookups,
       function(err, vectors) { //Final callback after parallel execution
         if (err) throw err;
-        console.log(vectors);
         for (var i = vectors.length - 1; i >= 0; i--) {
           if (vectors[i] === null) {
             vectors.splice(i, 1);
@@ -260,7 +259,7 @@ var self = {
   /**
   Wait for all sentences to be transformed into vectors, and then return execute a callback with the results.
   */
-  sentenceGroupGetSentiment: function(doubleArrSentenceTokens, next) {
+  sentenceGroupGetSentiment: function(doubleArrSentenceTokens, callback) {
     var vecLookups = [];
     for (let sentenceTokens of doubleArrSentenceTokens) {
       let vecLookup = function(next) {
@@ -287,7 +286,7 @@ var self = {
           results.polarity.push(weightedAvg);
           results.intensity.push(avgIntensity);
         }
-        next(null, results);
+        callback(null, results);
       }
     );
   },

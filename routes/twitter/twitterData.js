@@ -29,6 +29,53 @@ function testVisual(response) {
   d3Visualization.testVisualization(response);
 }
 
+
+function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
+  var query = {};
+  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
+  if (beginDate && endDate) {
+    query['creationTime'] = {
+      $gte: new Date(beginDate),
+      $lt: new Date(endDate)
+    };
+  }
+
+  var collectedSampleTweets = null;
+
+  async.waterfall([
+    function(next) {
+      connectToTweetData(next);
+    },
+    function(client, next) { //Find a not random subsampling of tweets to show
+      var dbase = client.db("testForAuth");
+      console.log(query);
+      Tweet.aggregate(
+          [
+              {$match: query},
+              {$project: {_id: 1, text: 1}},
+              {"$limit": DEFAULT_QUERY_LIMIT / 10}
+          ],
+          function(err, sampleTweets) {
+              if (err) throw err;
+              collectedSampleTweets = sampleTweets;
+              var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+              next(null, tweetStrings);
+          }
+      );
+    },
+    function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
+      var tweetArrTokens = twitterAnalysis.sanitizeTweets(sampleTweets);
+      cluster.sentenceGroupGetSentiment(tweetArrTokens, next);
+    }
+  ], function(err, sentimentData) {
+    if (callback) {
+      callback(null, sentimentData);
+    }
+  });
+}
+
+
 /**
 Initiate the following async waterfall:
 connect to the MongoDB hosting server;
@@ -394,6 +441,23 @@ router.get('/recentcluster', function(req, res, next) {
 
   queryTweetsCluster("", previousDate.toJSON(), currentDate.toJSON(), res);
   //res.send("Twitter data test query custom: " + userTopic);
+});
+
+
+router.get('/recentsentiment', function(req, res, next) {
+  var userTopic = req.params["topic"];
+  process.env.CURRENT_TOPIC = userTopic;
+
+  var currentDate = new Date();
+  var previousDate = new Date();
+  previousDate.setHours(currentDate.getHours() - 24);
+
+  var firstCallback = function(err, result) {
+    //This sends the word counts to the client, which are rendered by d3.js in the browser.
+    res.render('tweetSentimentPlot', {sentimentData: JSON.stringify(result)});
+  };
+
+  queryTweetsSentiment("", previousDate.toJSON(), currentDate.toJSON(), firstCallback);
 });
 
 
