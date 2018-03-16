@@ -39,7 +39,8 @@ var self = {
   },
 
   /**
-  Simply async read a dictionary text file containing a word on every line.
+  Async read a dictionary text file containing a word on every line.
+  This is formatted as "word1 \n word2 \n ..." without spaces.
   */
   readWordsFile: function(fileName) {
     if (self._data !== undefined) return;
@@ -50,15 +51,17 @@ var self = {
     });
 
     lineReader.on('line', function (line) {
-      //console.log('Line from file:', line);
       self.addWord(line.trim());
     });
 
+    //Optional test for this trie dictionary. Call all initial tests here.
+    /*
     lineReader.on('close', function () {
       //console.log(self._data);
       console.log(self.findWord("extreme"));
       console.log(self.findWord("extremettt"));
     });
+    */
   }
 
 };

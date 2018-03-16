@@ -619,10 +619,12 @@ var self = {
 
 //self.testCluster([["apple", "orange", "banana"], ["apple", "tangerine", "grape"], ["bird", "raven", "crow"], ["pigeon", "seagull", "albatross"]], null);
 
+/*
 self.testSentiment([
   "this is a bad terrible movie".split(" "),
   "exceedingly terrifying and displeasing".split(" "),
   "this is as great as a horror movie can be excellent brilliant".split(" ")
 ]);
+*/
 
 module.exports = self;

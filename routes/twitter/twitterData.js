@@ -109,7 +109,6 @@ function queryTweetsTopicGrouping(beginDate, endDate, response) {
     function(tweetsTextArr, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       //And also parse the tokens and keep only proper nouns for the clustering algorithm
       var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetsTextArr);
-      console.log(properNounTokens);
       var result = cluster.testProperNounTopicGrouping(properNounTokens);
       next(null, tweetsTextArr, result);
     }
