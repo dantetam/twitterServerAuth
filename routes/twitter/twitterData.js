@@ -8,7 +8,7 @@ var Tweet = require("../../models/tweet");
 var cluster = require('./unsupervisedCluster.js');
 var d3Visualization = require('./d3-visualization.js');
 
-var SMALL_QUERY_LIMIT = 100;
+var SMALL_QUERY_LIMIT = 200;
 var DEFAULT_QUERY_LIMIT = 500;
 var LARGE_QUERY_LIMIT = 10000;
 
@@ -85,6 +85,7 @@ function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
   }
 
   var collectedSampleTweets = null;
+  var properNounTokens = null;
 
   async.waterfall([
     function(next) {
@@ -109,9 +110,13 @@ function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       var tweetArrTokens = twitterAnalysis.sanitizeTweets(sampleTweets);
+      properNounTokens = twitterAnalysis.findProperNounsFromStrings(sampleTweets); //Stored globally so it can be sent to next and webpage
       cluster.sentenceGroupGetSentiment(tweetArrTokens, next);
     }
   ], function(err, sentimentData) {
+    if (err) throw err;
+    //Add additional data to be sent to the client
+    sentimentData["properNounTokens"] = properNounTokens;
     if (callback) {
       callback(null, sentimentData);
     }
