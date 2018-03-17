@@ -8,6 +8,7 @@ var Tweet = require("../../models/tweet");
 var cluster = require('./unsupervisedCluster.js');
 var d3Visualization = require('./d3-visualization.js');
 
+var SMALL_QUERY_LIMIT = 100;
 var DEFAULT_QUERY_LIMIT = 500;
 var LARGE_QUERY_LIMIT = 10000;
 
@@ -27,6 +28,48 @@ function connectToTweetData(next) {
 
 function testVisual(response) {
   d3Visualization.testVisualization(response);
+}
+
+
+function queryUniqueTweetsTest(beginDate, endData, callback) {
+  var query = {};
+  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
+  if (beginDate && endDate) {
+    query['creationTime'] = {
+      $gte: new Date(beginDate),
+      $lt: new Date(endDate)
+    };
+  }
+
+  var collectedSampleTweets = null;
+
+  async.waterfall([
+    function(next) {
+      connectToTweetData(next);
+    },
+    function(client, next) { //Find a not random subsampling of tweets to show
+      var dbase = client.db("testForAuth");
+      Tweet.group({
+          $keyf : function(doc){
+              return {
+                  key : doc.text.substring(0,1) // extract URL base here
+              }
+          },
+          $reduce : function(curr, result){
+              result.count++
+          },
+          initial : {
+              count: 0
+          }
+      });
+    }
+  ], function(err, result) {
+    if (err) throw err;
+    if (callback) {
+      callback(null, sentimentData);
+    }
+  });
 }
 
 
@@ -54,7 +97,7 @@ function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
           [
               {$match: query},
               {$project: {_id: 1, text: 1}},
-              {"$limit": DEFAULT_QUERY_LIMIT / 4}
+              {"$limit": SMALL_QUERY_LIMIT}
           ],
           function(err, sampleTweets) {
               if (err) throw err;
@@ -146,7 +189,6 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db("testForAuth");
-      console.log(query);
       Tweet.aggregate(
           [
               {$match: query},

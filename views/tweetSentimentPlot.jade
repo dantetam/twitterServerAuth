@@ -1,6 +1,8 @@
 h1 Twitter Sentiment Visualization
 div(id="wrapper")
   p This is an endpoint to test the Tweet Sentiment visualization, for sentiment polarity and intensity, in d3.js rendered beautifully in the browser.
+  br
+  p(id="queryData")
 div(id="chart")
 
 script(src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js")
@@ -9,6 +11,9 @@ script(src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js")
 script.
   var data = !{sentimentData}; //Stringified JSON turned back into object
   var formattedData = [];
+  
+  //Set the text of the div "#queryData" depending on the data given by the server
+  d3.select("#queryData").html("Number of visualized tweets: " + data.polarity.length);
   
   console.log(data);
   
