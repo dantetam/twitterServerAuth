@@ -12,19 +12,33 @@ var TweetSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  author: {
+  screenName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  authorPrettyName: {
     type: String,
     required: true,
     trim: true
   },
   text: {
     type: String,
+    unique: true,
     required: true,
     trim: true
   },
   creationTime: {
     type: Date,
     required: true
+  },
+  mediaLinks: {
+    type: [String],
+    required: false
+  },
+  urlLinks: {
+    type: [String],
+    required: false
   }
 });
 

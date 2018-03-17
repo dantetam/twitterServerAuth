@@ -10,7 +10,7 @@ var session = require('express-session');
 var MongoStore = require('connect-mongo')(session);
 
 //connect to MongoDB
-mongoose.connect('mongodb://localhost/testForAuth');
+mongoose.connect('mongodb://localhost/twitterServer');
 var db = mongoose.connection;
 
 var port = process.env.PORT || 3000; //Choose between production port or default localhosted port (3000)

@@ -12,6 +12,8 @@ var SMALL_QUERY_LIMIT = 200;
 var DEFAULT_QUERY_LIMIT = 500;
 var LARGE_QUERY_LIMIT = 10000;
 
+var TWITTER_SERVER_DATA_DIR_NAME = "twitterServer";
+
 //TODO: Merge all the query tweets async/promises into a uniform method for querying tweets,
 //and then custom callbacks to handle the results differently per use case.
 
@@ -49,7 +51,7 @@ function queryUniqueTweetsTest(beginDate, endData, callback) {
       connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db("testForAuth");
+      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       Tweet.group({
           $keyf : function(doc){
               return {
@@ -92,13 +94,14 @@ function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
       connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db("testForAuth");
+      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       //console.log(query);
       Tweet.aggregate(
           [
               {$match: query},
               {$project: {_id: 1, text: 1}},
-              {"$limit": SMALL_QUERY_LIMIT}
+              //{"$limit": SMALL_QUERY_LIMIT}
+              {$sample: {size: SMALL_QUERY_LIMIT}}
           ],
           function(err, sampleTweets) {
               if (err) throw err;
@@ -147,7 +150,7 @@ function queryTweetsTopicGrouping(beginDate, endDate, response) {
       connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db("testForAuth");
+      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       Tweet.find().distinct('text', query, function(err, tweetsTextArr) { //Instead of returning the full tweet objects,
         //the callback result 'tweetsTextArr' is an array of strings (tweets).
         if (err) throw err;
@@ -193,12 +196,12 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
       connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db("testForAuth");
+      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       Tweet.aggregate(
           [
               {$match: query},
               {$project: {_id: 1, text: 1}},
-              {"$limit": DEFAULT_QUERY_LIMIT}
+              {$sample: {size: DEFAULT_QUERY_LIMIT}}
           ],
           function(err, sampleTweets) {
               if (err) throw err;
@@ -247,12 +250,12 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
       connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db("testForAuth");
+      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       Tweet.aggregate(
           [
               {$match: query},
               {$project: {_id: 1, text: 1}},
-              {"$limit": DEFAULT_QUERY_LIMIT}
+              {$sample: {size: DEFAULT_QUERY_LIMIT}}
           ],
           function(err, results) {
               collectedSampleTweets = results; //Store results for later use out of scope
@@ -305,12 +308,12 @@ function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) 
       connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db("testForAuth");
+      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       Tweet.aggregate(
           [
               {$match: query},
               {$project: {_id: 1, text: 1}},
-              {"$limit": DEFAULT_QUERY_LIMIT}
+              {$sample: {size: DEFAULT_QUERY_LIMIT}}
           ],
           function(err, results) {
               collectedSampleTweets = results; //Store results for later use out of scope
@@ -368,14 +371,14 @@ function queryData(query, response, outputMode) {
       connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db("testForAuth");
+      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
         if (err) throw err;
         next(null, client, sampleTweets);
       });
     },
     function(client, sampleTweets, next) {
-      var dbase = client.db("testForAuth");
+      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       dbase.collection("tweets").find(query, dataInclude).toArray(function(err, result) {
         if (err) throw err;
         client.close();
@@ -413,7 +416,7 @@ function queryLotsOfTweets(response) {
       connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db("testForAuth");
+      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       dbase.collection("tweets").find(query, dataInclude).limit(LARGE_QUERY_LIMIT).toArray(function(err, sampleTweets) {
         if (err) throw err;
         client.close();

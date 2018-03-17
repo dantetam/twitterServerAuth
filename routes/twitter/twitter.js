@@ -52,8 +52,36 @@ function findBearerToken(userTopic, next) {
     json: true,
     body: "grant_type=client_credentials"
   }, function(err, resp, body) {
+    if (err) throw err;
+    process.env.CURRENT_BEARER_TOKEN = body["access_token"];
     if (next) next(null, err, resp, body);
   });
+}
+
+/*
+Use the previously found bearer token to OAuth into Twitter's tweet user timeline collection API.
+*/
+function getUserTimeline(bearerToken, screenName, next) {
+  var url = 'https://api.twitter.com/1.1/statuses/user_timeline.json';
+  request({
+    url: url + "?screen_name=" + screenName + "&count=100",
+    method: 'GET',
+    headers: {
+      "Authorization": "Bearer " + bearerToken,
+      "Content-Type": "application/json"
+    },
+    json: true
+  }, function(err, jsonResponse, body) {
+    if (next) next(null, err, jsonResponse, body);
+  });
+}
+
+/**
+Convert the tweets JSON into a readable text format for display: username + tweet text.
+*/
+function parseUserTimeline(timelineJson) {
+  console.log(timelineJson);
+  return timelineJson;
 }
 
 /*
@@ -117,6 +145,31 @@ function parseTopics(topicsJson) {
   }
   return results;
 }
+
+
+function getUserTimelineTweets(screenName, callback) {
+  async.waterfall([
+    function(next) {
+      findBearerToken(null, next);
+    },
+    function(err, resp, body, next) {
+      var bearerToken = body["access_token"];
+      getUserTimeline(bearerToken, screenName, next);
+    },
+    function(err, resp, body, next) {
+      var timeline = parseUserTimeline(body);
+      next(null, timeline);
+    }
+  ], function(err, result) {
+    if (err) {
+      console.log(err);
+    }
+    if (callback) {
+      callback(null, result);
+    }
+  });
+}
+
 
 /**
 Set up a correct 'async' queue of the following Twitter API actions:
@@ -251,6 +304,41 @@ function getWordImportanceInTopic(tweetStrings, specialWord) {
 /*
 Take the JSON data of the retrieved tweets and store them into the MongoDB database,
 using the Tweet schema defined in "/models/tweet.js".
+
+idString: {
+  type: String,
+  unique: true,
+  required: true,
+  trim: true
+},
+screenName: {
+  type: String,
+  required: true,
+  trim: true
+},
+authorPrettyName: {
+  type: String,
+  required: true,
+  trim: true
+},
+text: {
+  type: String,
+  unique: true,
+  required: true,
+  trim: true
+},
+creationTime: {
+  type: Date,
+  required: true
+},
+mediaLinks: {
+  type: [String],
+  required: false
+},
+urlLinks: {
+  type: [String],
+  required: false
+},
 */
 function storeTweetsInData(tweetsJson, next) {
   var results = [];
@@ -258,16 +346,25 @@ function storeTweetsInData(tweetsJson, next) {
   for (var i = 0; i < statuses.length; i++) {
     var status = statuses[i];
 
+    //Using the data gathered from status, store it in the MongoDB schema compactly
     var tweetData = {
       idString: status["id_str"],
-      author: status["user"]["name"],
+      screenName: status["user"]["screen_name"],
+      authorPrettyName: status["user"]["name"],
       text: status["text"],
       creationTime: new Date(status["created_at"])
+    }
+    if (status["entities"]["media"] !== undefined) { //Optional hyperlinks
+      tweetData.mediaLinks = status["entities"]["media"].map(function(mediaEntry) {return mediaEntry["media_url_https"];});
+    }
+    if (status["entities"]["urls"] !== undefined) {
+      tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
     }
 
     Tweet.create(tweetData, function (error, tweet) {
       if (error) {
-        return null;
+        //throw error;
+        return;
       }
     });
   }
@@ -330,6 +427,12 @@ router.get('/wordmap/:topic', function(req, res, next) {
     res.render('tweetWordCount', {wordCounts: JSON.stringify(result)});
   };
   getTweetsWithChosenTopic(userTopic, null, firstCallback);
+});
+
+
+router.get('/username/:screenName', function(req, res, next) {
+  var screenName = req.params["screenName"];
+  getUserTimelineTweets(screenName, function(err, result) {res.send(result);});
 });
 
 
