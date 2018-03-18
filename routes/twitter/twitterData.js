@@ -1,10 +1,12 @@
 var express = require('express');
 var async = require('async');
 var router = express.Router();
+var mongoose = require('mongoose');
 var MongoClient = require('mongodb').MongoClient;
 
 var twitterAnalysis = require('./twitter_analysis.js');
 var Tweet = require("../../models/tweet");
+var TwitterUser = require("../../models/twitterUser");
 var cluster = require('./unsupervisedCluster.js');
 var d3Visualization = require('./d3-visualization.js');
 
@@ -30,6 +32,40 @@ function connectToTweetData(next) {
 
 function testVisual(response) {
   d3Visualization.testVisualization(response);
+}
+
+
+function queryUserTweets(screenName, callback) {
+  async.waterfall([
+    function(next) {
+      connectToTweetData(next);
+    },
+    function(client, next) { //Find a not random subsampling of tweets to show
+      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
+      TwitterUser.findOne({"screenName": screenName}, function(err, twitterUser) {
+        console.log(twitterUser);
+        queryTweetsFromIdList(twitterUser["userTweetIds"], next);
+      });
+    }
+  ], function(err, result) {
+    if (err) throw err;
+    if (callback) {
+      callback(null, result);
+    }
+  });
+}
+
+
+//Lookup tweets from the database using the local mongoDB ids ("_id"), not the Twitter internal ids.
+function queryTweetsFromIdList(tweetDataIdList, next) {
+  var mongooseObjectIds = tweetDataIdList.map(function(idString) {
+    return mongoose.Types.ObjectId(idString);
+  });
+  Tweet.find({
+    '_id': { $in: mongooseObjectIds}
+  }, function(err, tweets) {
+    next(err, tweets)
+  });
 }
 
 
@@ -213,7 +249,6 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       var tweetArrTokens = twitterAnalysis.sanitizeTweets(sampleTweets);
-      console.log(tweetArrTokens.length);
       cluster.testCluster(tweetArrTokens, next);
     }
   ], function(err, clusters) {
@@ -451,6 +486,12 @@ router.get('/wordlookup/:searchTweetWord/:inspectWord', function(req, res, next)
     res.send(bigramCounts);
   };
   queryTweetsPredict(queryString, inspectWord, null, null, callback);
+});
+
+
+router.get('/user/:screenName', function(req, res, next) {
+  var screenName = req.params["screenName"];
+  queryUserTweets(screenName, function(err, tweets) {res.send(tweets);});
 });
 
 

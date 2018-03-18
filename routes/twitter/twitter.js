@@ -318,12 +318,20 @@ function storeTweetsInData(tweetsJson, next) {
       tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
     }
 
-    Tweet.create(tweetData, function (err, tweet) {
-      if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been created
-        next(err, null);
+    Tweet.find({ 'idString': status["id_str"] }, function (err, result) {
+      if (err) throw err;
+      if (result.length === 0) {
+        Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
+          if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
+            next(err, null);
+          }
+          else if (next) {
+            next(err, tweet);
+          }
+        });
       }
-      if (next) {
-        next(err, tweet);
+      else { //Callback with the already existing tweet in the database
+        next(err, result[0]);
       }
     });
   }
@@ -339,11 +347,13 @@ function storeUserTimelineInData(userTimelineJson, callback) {
 
   var newTweetIds = [];
   var numTweetsAdded = 0;
-  var storeTweetCallback = function(err, tweet) {
+  var storeTweetCallback = function(err, tweet) { //Create a callback which stores tweet database ids and fires once completed
+    numTweetsAdded++;
     if (tweet !== null) {
       newTweetIds.push(tweet._id);
     }
     if (numTweetsAdded === userTimelineJson.length) { //If we have added all the tweets and generated their database ids
+      //Extract from the RESTful API response and add to the TwitterUser schema
       var profileLinks = [userObj["profile_background_image_url_https"], userObj["profile_image_url_https"], userObj["profile_banner_url"]];
       var userData = {
         idString: userObj["id_str"],
@@ -353,11 +363,11 @@ function storeUserTimelineInData(userTimelineJson, callback) {
         userTweetIds: newTweetIds
       }
       TwitterUser.create(userData, function(err, twitterUser) {
-        if (err) {
-          throw err;
+        if (err && callback) {
+          callback(err, null);
         }
-        if (next) {
-          next(err, twitterUser);
+        else if (callback) {
+          callback(err, twitterUser);
         }
       });
     }

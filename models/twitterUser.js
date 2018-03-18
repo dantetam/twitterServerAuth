@@ -28,7 +28,7 @@ var TwitterUserSchema = new mongoose.Schema({
     required: false
   },
   userTweetIds: {
-    type: [Schema.Types.ObjectId],
+    type: [mongoose.Schema.Types.ObjectId],
     required: true
   }
 });
