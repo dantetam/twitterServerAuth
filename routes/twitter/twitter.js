@@ -9,6 +9,7 @@ var twitterAnalysis = require('./twitter_analysis.js');
 var cluster = require('./unsupervisedCluster.js');
 
 var Tweet = require("../../models/tweet");
+var TwitterUser = require("../../models/twitterUser");
 var siteData = require("./storedTwitterConfig.js");
 
 var focusTopicsCountMax = 25;
@@ -74,14 +75,6 @@ function getUserTimeline(bearerToken, screenName, next) {
   }, function(err, jsonResponse, body) {
     if (next) next(null, err, jsonResponse, body);
   });
-}
-
-/**
-Convert the tweets JSON into a readable text format for display: username + tweet text.
-*/
-function parseUserTimeline(timelineJson) {
-  console.log(timelineJson);
-  return timelineJson;
 }
 
 /*
@@ -157,8 +150,7 @@ function getUserTimelineTweets(screenName, callback) {
       getUserTimeline(bearerToken, screenName, next);
     },
     function(err, resp, body, next) {
-      var timeline = parseUserTimeline(body);
-      next(null, timeline);
+      storeUserTimelineInData(body, next);
     }
   ], function(err, result) {
     if (err) {
@@ -190,7 +182,7 @@ function getTweetsWithChosenTopic(topic, word, next) {
     },
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
-      storeTweetsInData(body, next);
+      storeTweetsInData(body);
       getWordImportanceInTopic(tweetStrings, null);
 
       var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings, 2); //Get the word count of all words
@@ -225,7 +217,7 @@ function getTweetsWithTrendingTopic(word, next) {
     },
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
-      storeTweetsInData(body, next);
+      storeTweetsInData(body);
       getWordImportanceInTopic(tweetStrings, null);
 
       next(null, tweetStrings);
@@ -304,41 +296,6 @@ function getWordImportanceInTopic(tweetStrings, specialWord) {
 /*
 Take the JSON data of the retrieved tweets and store them into the MongoDB database,
 using the Tweet schema defined in "/models/tweet.js".
-
-idString: {
-  type: String,
-  unique: true,
-  required: true,
-  trim: true
-},
-screenName: {
-  type: String,
-  required: true,
-  trim: true
-},
-authorPrettyName: {
-  type: String,
-  required: true,
-  trim: true
-},
-text: {
-  type: String,
-  unique: true,
-  required: true,
-  trim: true
-},
-creationTime: {
-  type: Date,
-  required: true
-},
-mediaLinks: {
-  type: [String],
-  required: false
-},
-urlLinks: {
-  type: [String],
-  required: false
-},
 */
 function storeTweetsInData(tweetsJson, next) {
   var results = [];
@@ -361,13 +318,51 @@ function storeTweetsInData(tweetsJson, next) {
       tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
     }
 
-    Tweet.create(tweetData, function (error, tweet) {
-      if (error) {
-        //throw error;
-        return;
+    Tweet.create(tweetData, function (err, tweet) {
+      if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been created
+        next(err, null);
+      }
+      if (next) {
+        next(err, tweet);
       }
     });
   }
+}
+
+
+function storeUserTimelineInData(userTimelineJson, callback) {
+  if (userTimelineJson.length === 0) {
+    callback(null, null);
+    return;
+  }
+  var userObj = userTimelineJson[0]["user"];
+
+  var newTweetIds = [];
+  var numTweetsAdded = 0;
+  var storeTweetCallback = function(err, tweet) {
+    if (tweet !== null) {
+      newTweetIds.push(tweet._id);
+    }
+    if (numTweetsAdded === userTimelineJson.length) { //If we have added all the tweets and generated their database ids
+      var profileLinks = [userObj["profile_background_image_url_https"], userObj["profile_image_url_https"], userObj["profile_banner_url"]];
+      var userData = {
+        idString: userObj["id_str"],
+        screenName: userObj["screen_name"],
+        authorPrettyName: userObj["name"],
+        profileLinks: profileLinks.filter(function(x) {return x !== undefined;}),
+        userTweetIds: newTweetIds
+      }
+      TwitterUser.create(userData, function(err, twitterUser) {
+        if (err) {
+          throw err;
+        }
+        if (next) {
+          next(err, twitterUser);
+        }
+      });
+    }
+  }
+  storeTweetsInData({statuses: userTimelineJson}, storeTweetCallback);
 }
 
 
