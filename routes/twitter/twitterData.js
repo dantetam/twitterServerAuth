@@ -500,7 +500,6 @@ router.get('/user/:screenName', function(req, res, next) {
       res.render('twitterDataUserNotFound', {"screenName": screenName})
     }
     else {
-      console.log(tweets);
       var tweetStrings = tweets.map(function(tweet) {return tweet["text"];});
       var topicFocuses = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
       var wordCount = twitterAnalysis.getWordCountFromTweets(tweetStrings);

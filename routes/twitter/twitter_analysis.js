@@ -23,7 +23,7 @@ var self = module.exports = {
     "to", "too", "under", "until", "up", "very", "was", "we", "we'd", "we'll", "we're", "we've", "were", "what", "what's", "when", "when's", "where", "where's",
     "which", "while", "who", "who's", "whom", "why", "why's", "with", "would", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves",
     "rt",
-    "youre"]; //Also add common misspellings
+    "youre", "doesnt", "dont", "aint", "couldnt", "shouldnt", "gonna", "wanna", "isnt", "arent", "wasnt", "werent"]; //Also add common misspellings
     var result = {};
     for (var word of data) {
       result[word] = true;
@@ -48,15 +48,15 @@ var self = module.exports = {
     var tokens = tweetSplitHashtags.toLowerCase().split(/[ ,]+/);
     //Go backwards since we are removing elements, arraylist trap
     for (var i = tokens.length - 1; i >= 0; i--) {
-      var token = tokens[i];
-      if (token.indexOf("...") !== -1 || token.indexOf("https") !== -1 || token.indexOf("@") !== -1 || token.indexOf("rt") !== -1) {
+      var token = tokens[i].trim();
+      if (token.indexOf("…") !== -1 || token.indexOf("https") !== -1 || token.indexOf("@") !== -1 || token.indexOf("rt") !== -1 || stopWordsDict[token]) {
         tokens.splice(i, 1);
         continue;
       }
       tokens[i] = tokens[i].replace(/[^a-z0-9]/g, "");
       tokens[i] = tokens[i].replace(/[ ]/g, "");
       tokens[i] = tokens[i].replace(/\r?\n|\r/g, " ");
-      if (token.length === 0 || stopWordsDict[token]) {
+      if (tokens[i].length === 0 || stopWordsDict[tokens[i]]) { //Transform the token to letters and again check to see if it is not a stop word
         tokens.splice(i, 1);
       }
     }
@@ -92,15 +92,32 @@ var self = module.exports = {
   },
   */
 
+  majorityLetter: function(str, proportion = 0.5) {
+    var data = {};
+    for (var i = 0; i < str.length; i++) {
+      var char = str.charAt(i);
+      if (data[char] === undefined) {
+        data[char] = 0;
+      }
+      data[char]++;
+      if (data[char] >= str.length * proportion) {
+        return char;
+      }
+    }
+    return null;
+  },
+
   notNamedEntity: function(word) {
     var lower = word.toLowerCase();
-    return trieDictionary.findWord(lower) || lower.indexOf("https") !== -1;
+    return trieDictionary.findWord(lower) ||
+      lower.indexOf("https") !== -1 ||
+      (!trieDictionary.findWord(lower) && self.majorityLetter(lower)); //Twitter users often use letter 'stretches' like 'soooo' to convey emotion, which bypass the dictionary
   },
 
   findAllProperNouns: function(doubleArrTokens) {
     for (var arrTokens of doubleArrTokens) {
       for (var i = arrTokens.length - 1; i >= 0; i--) { //Go backwards since we remove elements i.e. 'arraylist trap'
-        if (self.notNamedEntity(arrTokens[i])) { //If the individual token is in the dict of stop words
+        if (self.notNamedEntity(arrTokens[i]) || arrTokens[i].length <= 2) { //If the individual token is in the dict of stop words
           arrTokens.splice(i, 1);
         }
       }
