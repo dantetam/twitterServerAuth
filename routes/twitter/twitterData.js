@@ -500,7 +500,15 @@ router.get('/user/:screenName', function(req, res, next) {
       res.render('twitterDataUserNotFound', {"screenName": screenName})
     }
     else {
-      res.send(tweets);
+      console.log(tweets);
+      var tweetStrings = tweets.map(function(tweet) {return tweet["text"];});
+      var topicFocuses = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
+      var wordCount = twitterAnalysis.getWordCountFromTweets(tweetStrings);
+      res.write("Tweets queried from the user: " + screenName + "\n\n");
+      res.write(JSON.stringify(topicFocuses) + "\n\n");
+      res.write(JSON.stringify(wordCount) + "\n\n");
+      res.write("Data collected from user (raw json): " + screenName + "\n\n")
+      res.end(tweets + "\n\n");
     }
   });
 });
