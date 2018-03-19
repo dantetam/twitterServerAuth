@@ -154,7 +154,7 @@ function getUserTimelineTweets(screenName, callback) {
     }
   ], function(err, result) {
     if (err) {
-      console.log(err);
+      callback(err, result);
     }
     if (callback) {
       callback(null, result);
@@ -318,23 +318,45 @@ function storeTweetsInData(tweetsJson, next) {
       tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
     }
 
-    Tweet.find({ 'idString': status["id_str"] }, function (err, result) {
-      if (err) throw err;
-      if (result.length === 0) {
-        Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
-          if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
-            next(err, null);
-          }
-          else if (next) {
-            next(err, tweet);
-          }
-        });
-      }
-      else { //Callback with the already existing tweet in the database
-        next(err, result[0]);
-      }
+    Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
+
     });
   }
+}
+function storeSingleTweetInData(status, next) {
+  var results = [];
+
+  //Using the data gathered from status, store it in the MongoDB schema compactly
+  var tweetData = {
+    idString: status["id_str"],
+    screenName: status["user"]["screen_name"],
+    authorPrettyName: status["user"]["name"],
+    text: status["text"],
+    creationTime: new Date(status["created_at"])
+  }
+  if (status["entities"]["media"] !== undefined) { //Optional hyperlinks
+    tweetData.mediaLinks = status["entities"]["media"].map(function(mediaEntry) {return mediaEntry["media_url_https"];});
+  }
+  if (status["entities"]["urls"] !== undefined) {
+    tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
+  }
+
+  Tweet.find({ 'idString': status["id_str"] }, function (err, result) {
+    if (err) throw err;
+    if (result.length === 0) {
+      Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
+        if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
+          next(err, null);
+        }
+        else if (next) {
+          next(err, tweet);
+        }
+      });
+    }
+    else { //Callback with the already existing tweet in the database
+      next(err, result[0]);
+    }
+  });
 }
 
 
@@ -345,14 +367,20 @@ function storeUserTimelineInData(userTimelineJson, callback) {
   }
   var userObj = userTimelineJson[0]["user"];
 
-  var newTweetIds = [];
-  var numTweetsAdded = 0;
-  var storeTweetCallback = function(err, tweet) { //Create a callback which stores tweet database ids and fires once completed
-    numTweetsAdded++;
-    if (tweet !== null) {
-      newTweetIds.push(tweet._id);
-    }
-    if (numTweetsAdded === userTimelineJson.length) { //If we have added all the tweets and generated their database ids
+  var tweetIdCreations = [];
+  for (let tweet of userTimelineJson) {
+    let tweetIdCreationFunc = function(next) {
+      storeSingleTweetInData(tweet, next);
+    };
+    tweetIdCreations.push(tweetIdCreationFunc);
+  }
+
+  async.parallel(
+    tweetIdCreations,
+    function(err, tweetIds) { //Final callback after parallel execution (i.e. all tweet ids have been created or found)
+      if (err) {
+        throw err;
+      }
       //Extract from the RESTful API response and add to the TwitterUser schema
       var profileLinks = [userObj["profile_background_image_url_https"], userObj["profile_image_url_https"], userObj["profile_banner_url"]];
       var userData = {
@@ -360,7 +388,7 @@ function storeUserTimelineInData(userTimelineJson, callback) {
         screenName: userObj["screen_name"],
         authorPrettyName: userObj["name"],
         profileLinks: profileLinks.filter(function(x) {return x !== undefined;}),
-        userTweetIds: newTweetIds
+        userTweetIds: tweetIds
       }
       TwitterUser.create(userData, function(err, twitterUser) {
         if (err && callback) {
@@ -371,8 +399,7 @@ function storeUserTimelineInData(userTimelineJson, callback) {
         }
       });
     }
-  }
-  storeTweetsInData({statuses: userTimelineJson}, storeTweetCallback);
+  );
 }
 
 
@@ -435,9 +462,16 @@ router.get('/wordmap/:topic', function(req, res, next) {
 });
 
 
-router.get('/username/:screenName', function(req, res, next) {
+router.get('/user/:screenName', function(req, res, next) {
   var screenName = req.params["screenName"];
-  getUserTimelineTweets(screenName, function(err, result) {res.send(result);});
+  getUserTimelineTweets(screenName, function(err, result) {
+    if (err && err.name === 'MongoError' && err.code === 11000) { //The user entry already exists within the data
+      res.send("User with screen name '" + screenName + "' is already recorded in the database.")
+    }
+    else {
+      res.send(result);
+    }
+  });
 });
 
 

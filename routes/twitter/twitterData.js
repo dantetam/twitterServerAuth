@@ -43,8 +43,12 @@ function queryUserTweets(screenName, callback) {
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       TwitterUser.findOne({"screenName": screenName}, function(err, twitterUser) {
-        console.log(twitterUser);
-        queryTweetsFromIdList(twitterUser["userTweetIds"], next);
+        if (twitterUser === null) { //The user was not found in the database
+          next(err, null);
+        }
+        else {
+          queryTweetsFromIdList(twitterUser["userTweetIds"], next);
+        }
       });
     }
   ], function(err, result) {
@@ -491,7 +495,14 @@ router.get('/wordlookup/:searchTweetWord/:inspectWord', function(req, res, next)
 
 router.get('/user/:screenName', function(req, res, next) {
   var screenName = req.params["screenName"];
-  queryUserTweets(screenName, function(err, tweets) {res.send(tweets);});
+  queryUserTweets(screenName, function(err, tweets) {
+    if (tweets === null) { //The queried user was not found
+      res.render('twitterDataUserNotFound', {"screenName": screenName})
+    }
+    else {
+      res.send(tweets);
+    }
+  });
 });
 
 
