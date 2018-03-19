@@ -65,7 +65,7 @@ Use the previously found bearer token to OAuth into Twitter's tweet user timelin
 function getUserTimeline(bearerToken, screenName, next) {
   var url = 'https://api.twitter.com/1.1/statuses/user_timeline.json';
   request({
-    url: url + "?screen_name=" + screenName + "&count=100",
+    url: url + "?screen_name=" + screenName + "&count=200",
     method: 'GET',
     headers: {
       "Authorization": "Bearer " + bearerToken,
@@ -153,10 +153,10 @@ function getUserTimelineTweets(screenName, callback) {
       storeUserTimelineInData(body, next);
     }
   ], function(err, result) {
-    if (err) {
+    if (err && callback) {
       callback(err, result);
     }
-    if (callback) {
+    else if (callback) {
       callback(null, result);
     }
   });
@@ -341,9 +341,9 @@ function storeSingleTweetInData(status, next) {
     tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
   }
 
-  Tweet.find({ 'idString': status["id_str"] }, function (err, result) {
+  Tweet.findOne({ 'idString': status["id_str"] }, function (err, result) {
     if (err) throw err;
-    if (result.length === 0) {
+    if (result !== null) {
       Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
         if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
           next(err, null);
@@ -354,7 +354,7 @@ function storeSingleTweetInData(status, next) {
       });
     }
     else { //Callback with the already existing tweet in the database
-      next(err, result[0]);
+      next(err, result);
     }
   });
 }
@@ -390,6 +390,13 @@ function storeUserTimelineInData(userTimelineJson, callback) {
         profileLinks: profileLinks.filter(function(x) {return x !== undefined;}),
         userTweetIds: tweetIds
       }
+      /*
+      TwitterUser.findOne({ 'screenName': userObj["screen_name"] }, function (err, result) {
+        if (result === null) {
+
+        }
+      });
+      */
       TwitterUser.create(userData, function(err, twitterUser) {
         if (err && callback) {
           callback(err, null);
