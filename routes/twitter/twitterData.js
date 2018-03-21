@@ -503,11 +503,25 @@ router.get('/user/:screenName', function(req, res, next) {
       var tweetStrings = tweets.map(function(tweet) {return tweet["text"];});
       var topicFocuses = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
       var wordCount = twitterAnalysis.getWordCountFromTweets(tweetStrings);
-      res.write("Tweets queried from the user: " + screenName + "\n\n");
-      res.write(JSON.stringify(topicFocuses) + "\n\n");
-      res.write(JSON.stringify(wordCount) + "\n\n");
-      res.write("Data collected from user (raw json): " + screenName + "\n\n")
-      res.end(tweets + "\n\n");
+
+      var resWriteCallback = function(err, sentimentData) {
+        res.write("Tweets queried from the user: " + screenName + "\n\n");
+        res.write(JSON.stringify(topicFocuses) + "\n\n");
+
+        for (var i = 0; i < tweetStrings.length; i++) {
+          var newLineRemovedTweet = tweetStrings[i].replace(/\r?\n|\r/, "");
+          var compiledString = newLineRemovedTweet + "\n";
+          compiledString += " (Sentiment, Polarity: " + sentimentData.polarity[i] + ", Intensity: " + sentimentData.intensity[i] + ") \n";
+          compiledString += " (Important Tokens: " + JSON.stringify(sentimentData.sentenceTokens[i]) + ") \n"
+          res.write(compiledString);
+        }
+
+        res.write(JSON.stringify(wordCount) + "\n\n");
+        res.write("Data collected from user (raw json): " + screenName + "\n\n")
+        res.end(tweets + "\n\n");
+      }
+
+      cluster.sentenceGroupGetSentiment(twitterAnalysis.sanitizeTweets(tweetStrings), resWriteCallback);
     }
   });
 });

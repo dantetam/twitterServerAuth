@@ -23,7 +23,7 @@ var self = module.exports = {
     "to", "too", "under", "until", "up", "very", "was", "we", "we'd", "we'll", "we're", "we've", "were", "what", "what's", "when", "when's", "where", "where's",
     "which", "while", "who", "who's", "whom", "why", "why's", "with", "would", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves",
     "rt",
-    "youre", "doesnt", "dont", "aint", "couldnt", "shouldnt", "gonna", "wanna", "isnt", "arent", "wasnt", "werent"]; //Also add common misspellings
+    "youre", "doesnt", "dont", "aint", "couldnt", "shouldnt", "gonna", "wanna", "isnt", "arent", "wasnt", "werent", "hes", "shes", "mr", "mrs"]; //Also add common misspellings
     var result = {};
     for (var word of data) {
       result[word] = true;

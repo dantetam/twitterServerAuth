@@ -342,19 +342,19 @@ function storeSingleTweetInData(status, next) {
   }
 
   Tweet.findOne({ 'idString': status["id_str"] }, function (err, result) {
-    if (err) throw err;
     if (result !== null) {
       Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
         if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
-          next(err, null);
+          //Do not propogate errors
+          next(null, null);
         }
         else if (next) {
-          next(err, tweet);
+          next(null, tweet);
         }
       });
     }
     else { //Callback with the already existing tweet in the database
-      next(err, result);
+      next(null, result);
     }
   });
 }
