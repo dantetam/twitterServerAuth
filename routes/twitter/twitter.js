@@ -220,7 +220,7 @@ function getTweetsWithTrendingTopic(word, next) {
       storeTweetsInData(body);
       getWordImportanceInTopic(tweetStrings, null);
 
-      next(null, tweetStrings);
+      next(null, body);
     }
   ], function(err, result) {
     if (err) {
@@ -479,6 +479,20 @@ router.get('/user/:screenName', function(req, res, next) {
       res.send(result);
     }
   });
+});
+
+
+router.get('/tweetAndUserLookup', function(req, res, next) {
+  Repeat(function() {
+    getTweetsWithTrendingTopic(null, function(err, result) {
+      //Get a random user from one tweet and look that user up
+      var randomIndex = Math.floor(Math.random() * result["statuses"].length);
+      var randomUserScreenName = result["statuses"][randomIndex]["user"]["screen_name"];
+      console.log(randomUserScreenName);
+      getUserTimelineTweets(randomUserScreenName, function(err, result) {});
+    });
+  }).every(1000 * 30 * 1, 'ms').start.now();
+  res.send("The server is processing both a stream of tweets and storing a random author from the sample.");
 });
 
 
