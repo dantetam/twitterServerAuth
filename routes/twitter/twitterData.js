@@ -9,6 +9,7 @@ var Tweet = require("../../models/tweet");
 var TwitterUser = require("../../models/twitterUser");
 var cluster = require('./unsupervisedCluster.js');
 var d3Visualization = require('./d3-visualization.js');
+var util = require('../util.js');
 
 var SMALL_QUERY_LIMIT = 200;
 var DEFAULT_QUERY_LIMIT = 500;
@@ -506,17 +507,17 @@ router.get('/user/:screenName', function(req, res, next) {
 
       var resWriteCallback = function(err, sentimentData) {
         res.write("Tweets queried from the user: " + screenName + "\n\n");
-        res.write(JSON.stringify(topicFocuses) + "\n\n");
+        res.write(util.JSON_stringify(topicFocuses) + "\n\n");
 
         for (var i = 0; i < tweetStrings.length; i++) {
           var newLineRemovedTweet = tweetStrings[i].replace(/\r?\n|\r/, "");
           var compiledString = newLineRemovedTweet + "\n";
           compiledString += " (Sentiment, Polarity: " + sentimentData.polarity[i] + ", Intensity: " + sentimentData.intensity[i] + ") \n";
-          compiledString += " (Important Tokens: " + JSON.stringify(sentimentData.sentenceTokens[i]) + ") \n"
+          compiledString += " (Important Tokens: " + util.JSON_stringify(sentimentData.sentenceTokens[i]) + ") \n"
           res.write(compiledString);
         }
 
-        res.write(JSON.stringify(wordCount) + "\n\n");
+        res.write(util.JSON_stringify(wordCount) + "\n\n");
         res.write("Data collected from user (raw json): " + screenName + "\n\n")
         res.end(tweets + "\n\n");
       }
