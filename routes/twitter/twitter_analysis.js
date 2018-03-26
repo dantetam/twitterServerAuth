@@ -6,6 +6,7 @@ var trieDictionary = require("./trieDictionary.js");
 var self = module.exports = {
 
   //Sourced from https://stackoverflow.com/questions/4180363/javascript-regexp-replacing-1-with-f1
+  //This converts a joined set of camelCase words into fully separated words through a regex.
   camelCaseSeparate: function(stringValue) {
     return stringValue.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1");
   },
@@ -92,6 +93,10 @@ var self = module.exports = {
   },
   */
 
+  /**
+  Return a character of a word if the character has count greater or equal to _proportion_.
+  This only guarantees existence, not maximum.
+  */
   majorityLetter: function(str, proportion = 0.5) {
     var data = {};
     for (var i = 0; i < str.length; i++) {
@@ -109,9 +114,11 @@ var self = module.exports = {
 
   notNamedEntity: function(word) {
     var lower = word.toLowerCase();
+    //Twitter users often use letter 'stretches' like 'soooo' to convey emotion, which bypass the dictionary
+    //This corresponds to the third option
     return trieDictionary.findWord(lower) ||
       lower.indexOf("https") !== -1 ||
-      (!trieDictionary.findWord(lower) && self.majorityLetter(lower)); //Twitter users often use letter 'stretches' like 'soooo' to convey emotion, which bypass the dictionary
+      (!trieDictionary.findWord(lower) && self.majorityLetter(lower));
   },
 
   findAllProperNouns: function(doubleArrTokens) {
@@ -164,7 +171,10 @@ var self = module.exports = {
     return result / texts.length;
   },
 
-
+  /**
+  Search for all instances of words after _inspectWord_, which represents the distribution
+  P(next word | this word is _inspectWord_)
+  */
   bigramCounter: function(doubleArrTokens, inspectWord) {
     var insWordLower = inspectWord.trim().toLowerCase();
     var counts = {};
@@ -250,6 +260,10 @@ var self = module.exports = {
   },
 
 
+  /**
+  Utility method to convert a dictionary of keys and counts, into a sorted list in descending order
+  i.e. {a: 5, b: 2, c: 3} -> [[a, 5], [c, 3], [b, 2]]
+  */
   sortDictIntoList: function(dictionary, cutoffCountInc = 5) {
     var listSortedResults = [];
     for (var word in dictionary) {

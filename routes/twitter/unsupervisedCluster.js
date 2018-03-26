@@ -365,12 +365,14 @@ var self = {
   },
 
   /**
-  This is a modified calculation of Shannon entropy, a general measure of "species" similiarity/homogeneity within a population.
-  Its equation is exp( \sum_i p_i ln p_i ) where p_i is the proportion of objects belonging to the ith cluster.
+  This is a modified calculation of Shannon entropy, a general measure of "species" similiarity/homogeneity
+  within a population. Its equation is S = exp( \sum_i p_i ln p_i ) where
+  p_i is the proportion of objects belonging to the ith cluster.
 
-  This has been modified to deal with clusters that may overlap. In that case, every unique object contributes a weight of 1
-  to both the total and the cluster proportions (weighted by occurrence). i.e. [1, 2] [1, 3, 4] -> p_1 = (0.5 + 1) / 4, p_2 = (0.5 + 1 + 1) / 4,
-  then S = exp(0.375 ln 0.375 + 0.625 ln 0.625).
+  This has been modified to deal with clusters that may overlap. In that case, every unique object
+  contributes a weight of 1 to both the total and the cluster proportions (weighted by occurrence).
+  i.e. [1, 2] [1, 3, 4] -> p_1 = (0.5 + 1) / 4, p_2 = (0.5 + 1 + 1) / 4,
+  then S = exp(0.375 ln 0.375 + 0.625 ln 0.625) ~ 0.516.
   */
   modifiedShannonIndex: function(clusters) {
     var counts = {};
@@ -572,6 +574,7 @@ var self = {
     return result;
   },
 
+  //Return the set intersection and intersection length of two arrays
   getMatch: function(arrA, arrB) {
     var data = {};
     for (var x of arrA) {
@@ -591,6 +594,12 @@ var self = {
     return {"matchingObj": data, "matchingNum": results.length};
   },
 
+  /**
+  For an array of sentence vectors of length n,
+  create a matrix of size n by n,
+  where matrix[i,j] is the distance metric(vec_i, vec_j),
+  and where matrix[i,i] is undefined.
+  */
   getVecDistMatrix: function(sentenceVectors, metric) {
     if (metric === undefined) {
       throw Error("No sentence similiarity metric given for getVecDistMatrix()");

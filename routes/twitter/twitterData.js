@@ -8,7 +8,6 @@ var twitterAnalysis = require('./twitter_analysis.js');
 var Tweet = require("../../models/tweet");
 var TwitterUser = require("../../models/twitterUser");
 var cluster = require('./unsupervisedCluster.js');
-var d3Visualization = require('./d3-visualization.js');
 var util = require('../util.js');
 
 var SMALL_QUERY_LIMIT = 200;
@@ -28,11 +27,6 @@ function connectToTweetData(next) {
     if (err) throw err;
     next(null, client);
   });
-}
-
-
-function testVisual(response) {
-  d3Visualization.testVisualization(response);
 }
 
 
@@ -590,11 +584,6 @@ router.get('/topicgroups', function(req, res, next) {
   previousDate.setHours(currentDate.getHours() - 24);
 
   queryTweetsTopicGrouping(previousDate.toJSON(), currentDate.toJSON(), res);
-});
-
-
-router.get("/testvisual", function(req, res, next) {
-  testVisual(res);
 });
 
 
