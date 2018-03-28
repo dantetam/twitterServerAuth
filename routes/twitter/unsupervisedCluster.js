@@ -362,14 +362,22 @@ var self = {
   },
 
   /**
-  Measure the group diversity/similiarity index of a group of tweets.
+  Measure the group 'similiarity' index of a group of tweets.
   Ideally the tweets only contain important content words and proper nouns.
+  This method uses the concept of "average linkage", i.e.
   */
-  /*
-  sentenceGroupSimilarity: function(sentences, thresholdSimilarity) {
-
+  sentenceGroupSimilarity: function(sentenceVectors, metric, similiarityLimitFunc) {
+    var distMatrix = getVecDistMatrix(sentenceVectors, metric);
+    var avgLinkage = 0;
+    if (distMatrix.length === 0 || distMatrix[0].length === 0) return 0;
+    for (var i = 0; i < distMatrix.length; i++) {
+      for (var j = 0; j < distMatrix[0].length; j++) {
+        if (i <= j) continue;
+        avgLinkage += distMatrix[i][j];
+      }
+    }
+    return avgLinkage / (distMatrix.length * distMatrix[0].length / 2);
   },
-  */
 
   /**
   Front facing methods for taking in processed tweets and returning the desired result:
@@ -405,6 +413,10 @@ var self = {
   This works by "seeding" some initial cluster start points,
   expanding around the cluster points to populate new clusters,
   and merge clusters if there is enough overlap between shared points.
+
+  @param sentenceVectors The double array of either tokens or numbers, representing sentences
+  @param metric A function which takes in two vectors and returns some kind of distance
+  @param similiarityLimitFunc A function which returns true or false on a numbered condition (like > 0.3)
   */
   approxCluster: function(sentenceVectors, metric, similiarityLimitFunc) {
     var visited = {}; //Pick some initial cluster centroids to start with

@@ -14,7 +14,6 @@ var siteData = require("./storedTwitterConfig.js");
 
 var focusTopicsCountMax = 25;
 
-
 //This method is passed in the socket io communication objects
 //(initialized and retrieved upon connection within the main server).
 router.initConnectToSocket = function(socket, io) {
@@ -489,10 +488,9 @@ router.get('/tweetAndUserLookup', function(req, res, next) {
       //Get a random user from one tweet and look that user up
       var randomIndex = Math.floor(Math.random() * result["statuses"].length);
       var randomUserScreenName = result["statuses"][randomIndex]["user"]["screen_name"];
-      console.log(randomUserScreenName);
       getUserTimelineTweets(randomUserScreenName, function(err, result) {});
     });
-  }).every(1000 * 30 * 1, 'ms').start.now();
+  }).every(process.env.SERVER_MS_DELAY, 'ms').start.now();
   res.send("The server is processing both a stream of tweets and storing a random author from the sample.");
 });
 
@@ -512,7 +510,7 @@ router.get('/:topic', function(req, res, next) {
   //Only start a new queue of repeating requests when the topic changes
   Repeat(function() {
     getTweetsWithChosenTopic(process.env.CURRENT_TOPIC, null, null);
-  }).every(1000 * 30 * 1, 'ms').start.now();
+  }).every(process.env.SERVER_MS_DELAY, 'ms').start.now();
 
   res.send("The server is now processing the Twitter topic: " + userTopic);
 });
@@ -522,23 +520,17 @@ router.get('/:topic', function(req, res, next) {
 Handle no topic given in the URL params
 */
 router.get('/', function(req, res, next) {
-  /*
-  res.render('twitter', { //Only render the website when we are finished writing to it
-    title: 'Twitter Feed',
-    topic: 'N/A',
-    tweets: ['No tweets yet. Input a topic such as /twitter/California']
-  });
-  */
-
   var tweetsCallback = function(err, result) {
     if (router.sendTweetsSocketMsg !== undefined) {
       router.sendTweetsSocketMsg(result);
     }
   }
 
+  //Set up an infinite server loop to retrieve tweets,
+  //and once done, send those tweets to the client.
   Repeat(function() {
     getTweetsWithTrendingTopic(null, tweetsCallback);
-  }).every(1000 * 30 * 1, 'ms').start.now();
+  }).every(process.env.SERVER_MS_DELAY, 'ms').start.now();
 
   //res.send("The server is processing a chosen topic.");
   res.render('twitterEndpoint', {});
