@@ -318,7 +318,7 @@ function storeTweetsInData(tweetsJson, next) {
       tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
     }
 
-    Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
+    Tweet.create(tweetData, function(err, tweet) { //Create this entry if it does not exist
 
     });
   }

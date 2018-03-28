@@ -14,7 +14,7 @@ mongoose.connect('mongodb://localhost/twitterServer');
 var db = mongoose.connection;
 
 var port = process.env.PORT || 3000; //Choose between production port or default localhosted port (3000)
-process.env.SERVER_MS_DELAY = 15 * 1000;
+process.env.SERVER_MS_DELAY = 15 * 1000; //Amount of time to repeat Twitter API query
 
 //handle mongo error
 db.on('error', console.error.bind(console, 'connection error:'));
@@ -53,9 +53,13 @@ app.use('/twitterData', twitterDataAnalysisRoute);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
+  /*
   var err = new Error('File Not Found');
   err.status = 404;
   next(err);
+  */
+  res.status(404);
+  res.sendFile(path.join(__dirname + '/templateLogReg/404.html'));
 });
 
 // error handler

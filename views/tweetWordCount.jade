@@ -1,11 +1,13 @@
 h1 Twitter Word Count
 div(id="wrapper")
   p This is an endpoint to test the word importance visualization, in d3.js rendered beautifully in the browser.
+button(id="saveButton")
 div(id="chart")
 
 script(src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js")
 script(src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js")
 script(src="/js/lib/cloud.js")
+script(src="/js/lib/svgsave.js")
 
 script.
   var wordCounts = !{wordCounts}; //Stringified JSON turned back into object
@@ -62,3 +64,14 @@ script.
   console.log(wordCounts);
 
   d3.layout.cloud().stop();
+
+  // Set-up the export button; this uses the file svgsave.js, a utility library
+  // for converting d3.js visualizations into usable image filess
+  d3.select('#saveButton').on('click', function(){
+      var svgString = getSVGString(svg.node());
+      svgString2Image( svgString, 2*width, 2*height, 'png', save ); // passes Blob and filesize String to the callback
+
+      function save( dataBlob, filesize ){
+          saveAs( dataBlob, 'CensusVisual' + mode + '.png' ); // FileSaver.js function
+      }
+  });

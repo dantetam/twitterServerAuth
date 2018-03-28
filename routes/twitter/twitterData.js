@@ -490,6 +490,7 @@ router.get('/wordlookup/:searchTweetWord/:inspectWord', function(req, res, next)
 
 router.get('/user/:screenName', function(req, res, next) {
   var screenName = req.params["screenName"];
+  var outputMode = req.query["output"];
   queryUserTweets(screenName, function(err, tweets) {
     if (tweets === null) { //The queried user was not found
       res.render('twitterDataUserNotFound', {"screenName": screenName})
@@ -500,20 +501,38 @@ router.get('/user/:screenName', function(req, res, next) {
       var wordCount = twitterAnalysis.getWordCountFromTweets(tweetStrings);
 
       var resWriteCallback = function(err, sentimentData) {
-        res.write("Tweets queried from the user: " + screenName + "\n\n");
-        res.write(util.JSON_stringify(topicFocuses) + "\n\n");
+        if (outputMode === "text") {
+          res.write("Tweets queried from the user: " + screenName + "\n\n");
+          res.write(util.JSON_stringify(topicFocuses) + "\n\n");
 
-        for (var i = 0; i < tweetStrings.length; i++) {
-          var newLineRemovedTweet = tweetStrings[i].replace(/\r?\n|\r/, "");
-          var compiledString = newLineRemovedTweet + "\n";
-          compiledString += " (Sentiment, Polarity: " + sentimentData.polarity[i] + ", Intensity: " + sentimentData.intensity[i] + ") \n";
-          compiledString += " (Important Tokens: " + util.JSON_stringify(sentimentData.sentenceTokens[i]) + ") \n"
-          res.write(compiledString);
+          for (var i = 0; i < tweetStrings.length; i++) {
+            var newLineRemovedTweet = tweetStrings[i].replace(/\r?\n|\r/, "");
+            var compiledString = newLineRemovedTweet + "\n";
+            compiledString += " (Sentiment, Polarity: " + sentimentData.polarity[i] + ", Intensity: " + sentimentData.intensity[i] + ") \n";
+            compiledString += " (Important Tokens: " + util.JSON_stringify(sentimentData.sentenceTokens[i]) + ") \n"
+            res.write(compiledString);
+          }
+
+          res.write(util.JSON_stringify(wordCount) + "\n\n");
+          res.write("Data collected from user (raw json): " + screenName + "\n\n")
+          res.end(tweets + "\n\n");
         }
-
-        res.write(util.JSON_stringify(wordCount) + "\n\n");
-        res.write("Data collected from user (raw json): " + screenName + "\n\n")
-        res.end(tweets + "\n\n");
+        else { //Use JSON mode by default
+          var jsonObjResult = {};
+          jsonObjResult["screen_name"] = screenName;
+          jsonObjResult["topic_focus"] = topicFocuses;
+          jsonObjResult["tweets"] = [];
+          for (var i = 0; i < tweetStrings.length; i++) {
+            var newLineRemovedTweet = tweetStrings[i].replace(/\r?\n|\r/, "");
+            var compiledObj = {};
+            compiledObj["text"] = newLineRemovedTweet;
+            compiledObj["sentiment_polarity"] = sentimentData.polarity[i];
+            compiledObj["sentiment_intensity"] = sentimentData.intensity[i];
+            compiledObj["important_tokens"] = sentimentData.sentenceTokens[i];
+            jsonObjResult["tweets"].push(compiledObj);
+          }
+          res.send(jsonObjResult);
+        }
       }
 
       cluster.sentenceGroupGetSentiment(twitterAnalysis.sanitizeTweets(tweetStrings), resWriteCallback);
