@@ -15,8 +15,9 @@ var siteData = require("./storedTwitterConfig.js");
 var focusTopicsCountMax = 25;
 
 
-router.connectToSocket = function(socket, io) {
-  console.log("Connection established between: twitter router, and socket io client");
+//This method is passed in the socket io communication objects
+//(initialized and retrieved upon connection within the main server).
+router.initConnectToSocket = function(socket, io) {
   router.sendTweetsSocketMsg = function(tweets) {
     socket.emit('/twitter/', {
       "tweets": tweets

@@ -74,18 +74,6 @@ app.listen(port, function () {
 server.listen(port);
 
 //Setup socket.io live client-server communication
-/*
-io.on('connection', function(socket) {
-
-    console.log('Client connected.');
-
-    // Disconnect listener
-    socket.on('disconnect', function() {
-        console.log('Client disconnected.');
-    });
-});
-*/
-
 io.sockets.on('connection', function (sock) {
-  twitterRoutes.connectToSocket(sock, io);
+  twitterRoutes.initConnectToSocket(sock, io);
 });

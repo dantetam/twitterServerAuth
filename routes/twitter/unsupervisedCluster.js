@@ -1,10 +1,9 @@
 /*
 Server side unsupervised classification/clustering algorithm for tweets.
 
-This runs an analysis on queried tweets and forms clusters through k-means,
-testing the best _k_ (number of clusters) based on the Schwarz criterion:
-
-
+PROPOSED: run an analysis on queried tweets and forms clusters through k-means,
+testing the best _k_ (number of clusters) based on the Schwarz criterion.
+The Schwarz criterion, briefly, is a generalized measure of the "fit" of a predicted
 */
 
 var readline = require('readline');
@@ -18,41 +17,6 @@ var DEFAULT_THRESHOLD_SIMILARITY = 3.5;
 var DEFAULT_TOPIC_MATCHING_LIMIT = 0.25;
 
 var self = {
-
-  /*
-  kMeansClustering: function(data, numClusters) {
-    var chosenRandomIndices = {}; //Pick some initial cluster centroids to start with
-    var n = data.length; //Number of points
-    for (var i = 0; i < numClusters; i++) {
-      while (true) {
-        var index = Math.random() * n;
-        if (chosenRandomIndices[index] === undefined) {
-          chosenRandomIndices[index] = true;
-          break;
-        }
-      }
-    }
-    var clusterCenters = [];
-
-    for (var kMeansIter = 0; kMeansIter < 10; kMeansIter++) {
-      var clusters = [];
-      for (var index in chosenRandomIndices) {
-        var dataPoint = data[index];
-        clusterCenters.push(dataPoint);
-        clusters.push([]);
-      }
-      for (var i = 0; i < n; i++) {
-        for (var j = 0; j < numClusters; j++) {
-
-        }
-      }
-    }
-  },
-
-  optimalClustering: function(data) {
-
-  },
-  */
 
   /**
   Async. look through word2vec files for the respective word vector for the given word,
@@ -568,8 +532,6 @@ var self = {
         result.push([i, j]);
       }
     }
-
-    console.log(result);
 
     return result;
   },
