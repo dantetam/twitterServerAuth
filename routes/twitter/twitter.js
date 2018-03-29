@@ -26,6 +26,21 @@ router.initConnectToSocket = function(socket, io) {
 }
 
 
+function serverChooseTopic(topicStr) {
+  var prevTopic = siteData.CURRENT_TOPIC;
+  siteData.CURRENT_TOPIC = topicStr;
+  if (!siteData.MOST_RECENT_TWITTER_TOPICS) {
+    siteData.MOST_RECENT_TWITTER_TOPICS = [];
+  }
+  siteData.MOST_RECENT_TWITTER_TOPICS.splice(0, 0, topicStr);
+  //If the array exceeds maximum length, remove last element
+  if (siteData.MOST_RECENT_TWITTER_TOPICS.length > process.env.RECENT_TWITTER_TOPICS_LIMIT_NUM) {
+    siteData.MOST_RECENT_TWITTER_TOPICS.splice(process.env.RECENT_TWITTER_TOPICS_LIMIT_NUM, 1);
+  }
+  return prevTopic === topicStr;
+}
+
+
 /*
 Fix and modularize these callbacks so they form a neat queue and final callback to render the website
 */
@@ -113,6 +128,10 @@ function parseTweets(tweetsJson) {
 Use the application-only OAuth token to find popular Twitter topics
 */
 function getTopics(bearerToken, next) {
+  if (siteData.TOPIC_SEARCH_API_CACHE && siteData.TOPIC_SEARCH_API_CACHE.length > 0) {
+    if (next) next(null, siteData.TOPIC_SEARCH_API_CACHE, bearerToken);
+  }
+
   var url = 'https://api.twitter.com/1.1/trends/place.json?id=23424977';
   request({
     url: url,
@@ -123,7 +142,7 @@ function getTopics(bearerToken, next) {
     },
     json: true
   }, function(err, jsonResponse, body) {
-    if (next) next(null, err, jsonResponse, body, bearerToken);
+    if (next) next(err, body, bearerToken);
   });
 }
 
@@ -131,7 +150,10 @@ function getTopics(bearerToken, next) {
 Convert Twitter Topic Search API JSON response into an array of topic strings.
 */
 function parseTopics(topicsJson) {
-  if (topicsJson["errors"]) return null;
+  if (topicsJson["errors"]) {
+    console.log(topicsJson["errors"]);
+    return null;
+  }
   var trends = topicsJson[0]["trends"];
   var results = [];
   for (var trend of trends) {
@@ -209,16 +231,22 @@ function getTweetsWithTrendingTopic(word, next) {
       var bearerToken = body["access_token"];
       getTopics(bearerToken, next);
     },
-    function(err, resp, body, bearerToken, next) {
+    function(body, bearerToken, next) {
+      console.log(body);
+      console.log(bearerToken);
+
       var topicStrings = parseTopics(body);
       //No topics found. Just exit with an error.
-      if (topicStrings === null || topicStrings === undefined) {
-        callback(new Error("No topics found from parseTopics(...)."), {});
+      if (topicStrings === null || topicStrings === undefined || topicStrings.length === 0) {
+        next(new Error("No topics found from parseTopics(...)."), {});
       }
-      var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
-      console.log("Chose trending topic (US): " + randomTopic);
-      process.env.CURRENT_TOPIC = randomTopic;
-      getTweets(bearerToken, randomTopic, next);
+      else {
+        var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
+        console.log("Chose trending topic (US): " + randomTopic);
+        //process.env.CURRENT_TOPIC = randomTopic;
+        serverChooseTopic(randomTopic);
+        getTweets(bearerToken, randomTopic, next);
+      }
     },
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
@@ -246,11 +274,12 @@ function getProperNounsFromTweets(next) {
       var bearerToken = body["access_token"];
       getTopics(bearerToken, next);
     },
-    function(err, resp, body, bearerToken, next) {
+    function(err, body, bearerToken, next) {
       var topicStrings = parseTopics(body);
       var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
       console.log("Chose trending topic for topic grouping (US): " + randomTopic);
-      process.env.CURRENT_TOPIC = randomTopic;
+      //process.env.CURRENT_TOPIC = randomTopic;
+      serverChooseTopic(randomTopic);
       getTweets(bearerToken, randomTopic, next);
     },
     function(err, resp, body, next) {
@@ -292,6 +321,9 @@ function getWordImportanceInTopic(tweetStrings, specialWord) {
 
     //Find the 7th most popular word
     var indexWord = Math.min(7, wordCounts.length - 1);
+    if (indexWord <= 0) {
+      return;
+    }
     specialWord = wordCounts[indexWord][0];
   }
   //Compute its tf-idf importance metric
@@ -480,7 +512,8 @@ router.get("/randomSample", function(req, res, next) {
 
 router.get('/wordmap/:topic', function(req, res, next) {
   var userTopic = req.params["topic"];
-  process.env.CURRENT_TOPIC = userTopic;
+  //process.env.CURRENT_TOPIC = userTopic;
+  serverChooseTopic(userTopic);
   //The callback to first update the page when the user uses this endpoint
   var firstCallback = function(err, result) {
     //This sends the word counts to the client, which are rendered by d3.js in the browser.
@@ -523,10 +556,11 @@ i.e. it catches /twittertest/California
  */
 router.get('/:topic', function(req, res, next) {
   var userTopic = req.params["topic"] || process.env.CURRENT_TOPIC;
-  if (userTopic === process.env.CURRENT_TOPIC) {
+  //process.env.CURRENT_TOPIC = userTopic;
+  var choseDifferentTopic = serverChooseTopic(userTopic);
+  if (choseDifferentTopic) {
     res.send("The server is active and still processing the same Twitter topic request: " + userTopic);
-  };
-  process.env.CURRENT_TOPIC = userTopic;
+  }
 
   //Only start a new queue of repeating requests when the topic changes
   Repeat(function() {
