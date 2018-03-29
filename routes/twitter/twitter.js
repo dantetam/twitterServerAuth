@@ -37,6 +37,7 @@ function serverChooseTopic(topicStr) {
   if (siteData.MOST_RECENT_TWITTER_TOPICS.length > process.env.RECENT_TWITTER_TOPICS_LIMIT_NUM) {
     siteData.MOST_RECENT_TWITTER_TOPICS.splice(process.env.RECENT_TWITTER_TOPICS_LIMIT_NUM, 1);
   }
+  console.log(siteData.MOST_RECENT_TWITTER_TOPICS);
   return prevTopic === topicStr;
 }
 
@@ -232,9 +233,6 @@ function getTweetsWithTrendingTopic(word, next) {
       getTopics(bearerToken, next);
     },
     function(body, bearerToken, next) {
-      console.log(body);
-      console.log(bearerToken);
-
       var topicStrings = parseTopics(body);
       //No topics found. Just exit with an error.
       if (topicStrings === null || topicStrings === undefined || topicStrings.length === 0) {
@@ -242,7 +240,7 @@ function getTweetsWithTrendingTopic(word, next) {
       }
       else {
         var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
-        console.log("Chose trending topic (US): " + randomTopic);
+        //console.log("Chose trending topic (US): " + randomTopic);
         //process.env.CURRENT_TOPIC = randomTopic;
         serverChooseTopic(randomTopic);
         getTweets(bearerToken, randomTopic, next);
@@ -277,7 +275,7 @@ function getProperNounsFromTweets(next) {
     function(err, body, bearerToken, next) {
       var topicStrings = parseTopics(body);
       var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
-      console.log("Chose trending topic for topic grouping (US): " + randomTopic);
+      //console.log("Chose trending topic for topic grouping (US): " + randomTopic);
       //process.env.CURRENT_TOPIC = randomTopic;
       serverChooseTopic(randomTopic);
       getTweets(bearerToken, randomTopic, next);

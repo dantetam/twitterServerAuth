@@ -29,6 +29,11 @@ function queryServerStatus(res) {
   });
 }
 
+router.get('/readme', function(req, res, next) {
+  //res.sendFile(path.join(__dirname + '/templateLogReg/readme.html'));
+  res.render('readme', {});
+});
+
 router.get('/count', function(req, res, next) {
   queryServerStatus(res);
 });

@@ -14,7 +14,7 @@ mongoose.connect('mongodb://localhost/twitterServer');
 var db = mongoose.connection;
 
 var port = process.env.PORT || 3000; //Choose between production port or default localhosted port (3000)
-process.env.SERVER_MS_DELAY = 5 * 1000; //Amount of time to repeat Twitter API query
+process.env.SERVER_MS_DELAY = 10 * 1000; //Amount of time to repeat Twitter API query
 process.env.RECENT_TWITTER_TOPICS_LIMIT_NUM = 25;
 
 //handle mongo error
