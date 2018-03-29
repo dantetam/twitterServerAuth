@@ -3,11 +3,19 @@ div(id="wrapper")
   p This is an endpoint to test the Tweet Sentiment visualization, for sentiment polarity and intensity, in d3.js rendered beautifully in the browser.
   br
   p(id="queryData")
+button(id="saveButton") Save Visualization
 div(id="chart")
 
 script(src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js")
 script(src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js")
-script(src="/js/lib/svgsave.js")
+script(src="/js/lib/svgsave/canvas-toBlob.js")
+script(src="/js/lib/svgsave/FileSaver.min.js")
+script(src="/js/lib/svgsave/svgsave.js")
+
+style.
+  body {
+    font-family: "Arial";
+  }
 
 script.
   var data = !{sentimentData}; //Stringified JSON turned back into object
@@ -49,13 +57,13 @@ script.
     	      .domain(extentY)
     	      .range([ height, 0 ]);
  
-  var chart = d3.select(svgId)
+  var svg = d3.select(svgId)
     .append('svg:svg')
     .attr('width', width + margin.right + margin.left)
     .attr('height', height + margin.top + margin.bottom)
     .attr('class', 'chart');
 
-  var main = chart.append('g')
+  var main = svg.append('g')
   	.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
   	.attr('width', width)
   	.attr('height', height)
@@ -65,11 +73,14 @@ script.
   var xAxis = d3.svg.axis()
   	.scale(x)
   	.orient('bottom');
-
+    
   main.append('g')
   	.attr('transform', 'translate(0,' + height + ')')
   	.attr('class', 'main axis date')
-  	.call(xAxis);
+  	.call(xAxis)
+    .append("text")
+    .text("Sentiment (Negative to Positive)")
+    .attr("x", "50%");
 
   // draw the y axis
   var yAxis = d3.svg.axis()
@@ -79,7 +90,10 @@ script.
   main.append('g')
   	.attr('transform', 'translate(0,0)')
   	.attr('class', 'main axis date')
-  	.call(yAxis);
+  	.call(yAxis)
+    .append("text")
+    .text("Intensity (Weak to Strong)")
+    .attr("y", "50%");
 
   var g = main.append("svg:g"); 
   
@@ -109,9 +123,14 @@ script.
   d3.select('#saveButton').on('click', function(){
       var svgString = getSVGString(svg.node());
       svgString2Image( svgString, 2*width, 2*height, 'png', save ); // passes Blob and filesize String to the callback
+      
+      //Get the current date as a conveniently formatted string
+      //One line sourced from 
+      //https://stackoverflow.com/questions/12409299/how-to-get-current-formatted-date-dd-mm-yyyy-in-javascript-and-append-it-to-an-i#answer-12409344
+      var formattedDateString = new Date(Date.now()).toLocaleString();
 
       function save( dataBlob, filesize ){
-          saveAs( dataBlob, 'CensusVisual' + mode + '.png' ); // FileSaver.js function
+          saveAs( dataBlob, 'tweetSentimentPlot_' + formattedDateString + '.png' ); // FileSaver.js function
       }
   });
 

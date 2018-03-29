@@ -500,6 +500,8 @@ router.get('/user/:screenName', function(req, res, next) {
       var topicFocuses = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
       var wordCount = twitterAnalysis.getWordCountFromTweets(tweetStrings);
 
+      //After done retrieving tweets and running calculations on them,
+      //send them through the RESTful response.
       var resWriteCallback = function(err, sentimentData) {
         if (outputMode === "text") {
           res.write("Tweets queried from the user: " + screenName + "\n\n");
@@ -533,7 +535,7 @@ router.get('/user/:screenName', function(req, res, next) {
           }
           res.send(jsonObjResult);
         }
-      }
+      };
 
       cluster.sentenceGroupGetSentiment(twitterAnalysis.sanitizeTweets(tweetStrings), resWriteCallback);
     }

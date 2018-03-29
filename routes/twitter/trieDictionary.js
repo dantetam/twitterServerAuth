@@ -5,6 +5,8 @@ var fs = require('fs');
 A custom trie data structure in JS object format for storing and finding words quickly with minimal memory repetition of prefixes.
 Every subtree is indexed by individual letters in "children",
 and the optional "active" key, signifying that the word beginning at the root and continuing all the way to the subtree, is an actual word.
+
+All of the word data is stored in javascript global variables. This scales fine for some 50,000 words.
 */
 
 var self = {

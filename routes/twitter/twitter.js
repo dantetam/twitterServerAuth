@@ -9,6 +9,7 @@ var twitterAnalysis = require('./twitter_analysis.js');
 var cluster = require('./unsupervisedCluster.js');
 
 var Tweet = require("../../models/tweet");
+var UniqueTweet = require("../../models/uniqueTweet");
 var TwitterUser = require("../../models/twitterUser");
 var siteData = require("./storedTwitterConfig.js");
 
@@ -83,7 +84,7 @@ Use the previously found bearer token to OAuth into Twitter's tweet search API,
 function getTweets(bearerToken, userTopic, next) {
   var url = 'https://api.twitter.com/1.1/search/tweets.json';
   request({
-    url: url + "?q=" + userTopic + "&count=50&lang=en&result_type=mixed",
+    url: url + "?q=" + userTopic + "&count=100&lang=en&result_type=mixed",
     method: 'GET',
     headers: {
       "Authorization": "Bearer " + bearerToken,
@@ -210,6 +211,10 @@ function getTweetsWithTrendingTopic(word, next) {
     },
     function(err, resp, body, bearerToken, next) {
       var topicStrings = parseTopics(body);
+      //No topics found. Just exit with an error.
+      if (topicStrings === null || topicStrings === undefined) {
+        callback(new Error("No topics found from parseTopics(...)."), {});
+      }
       var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
       console.log("Chose trending topic (US): " + randomTopic);
       process.env.CURRENT_TOPIC = randomTopic;
@@ -303,6 +308,19 @@ function storeTweetsInData(tweetsJson, next) {
   for (var i = 0; i < statuses.length; i++) {
     var status = statuses[i];
 
+    //RT @screen_name: tweet...
+    var removeRetweet = function(str) {
+      var tokens = str.match(/\S+/g) || [];
+      if (tokens.length >= 2 && tokens[0] === "RT") {
+        var cutLength = 2 + 1 + tokens[1].length; //Remove first two tokens
+        //It's done this way to preserve original whitespace of the tweet
+        return str.substring(cutLength);
+      }
+      else {
+        return str;
+      }
+    }
+
     //Using the data gathered from status, store it in the MongoDB schema compactly
     var tweetData = {
       idString: status["id_str"],
@@ -317,10 +335,13 @@ function storeTweetsInData(tweetsJson, next) {
     if (status["entities"]["urls"] !== undefined) {
       tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
     }
+    Tweet.create(tweetData, function(err, tweet) {}); //Create this entry if it does not exist
 
-    Tweet.create(tweetData, function(err, tweet) { //Create this entry if it does not exist
-
-    });
+    //Unique tweets (i.e. without retweets) are stored again, and are unique,
+    //such that user2: RT @user1: ..., user3: RT @user1: ...
+    //are considered the same and stored only once.
+    tweetData["text"] = removeRetweet(status["text"]);
+    UniqueTweet.create(tweetData, function(err, tweet) {});
   }
 }
 function storeSingleTweetInData(status, next) {
