@@ -16,13 +16,14 @@ var LARGE_QUERY_LIMIT = 10000;
 
 var TWITTER_SERVER_DATA_DIR_NAME = "twitterServer";
 
+var databaseUrl = process.env.MONGODB_URI || "mongodb://localhost:27017/";
+
 //TODO: Merge all the query tweets async/promises into a uniform method for querying tweets,
 //and then custom callbacks to handle the results differently per use case.
 
 function connectToTweetData(next) {
   //connect to MongoDB, initiate callback onConnection, using new mongoDB 3.0 client syntax
-  var url = "mongodb://localhost:27017/";
-  MongoClient.connect(url, function(err, client) {   //Return the mongoDB client obj
+  MongoClient.connect(databaseUrl, function(err, client) {   //Return the mongoDB client obj
     //The client object encompasses the whole database
     if (err) throw err;
     next(null, client);
