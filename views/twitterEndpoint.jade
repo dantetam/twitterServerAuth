@@ -14,11 +14,14 @@ block content
   script(src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js")
   script(src="/js/lib/socket.io.js")
   script.
+    var chosenPort = !{port};
+    console.log(chosenPort);
+  
     var prettyTextTweet = function(tweet) {
       return tweet.user.screen_name + " (" + tweet.user.name + "): " + tweet.text;
     };
   
-    var socket = io.connect('http://localhost:3000', {reconnect: true});
+    var socket = io.connect('https://localhost:' + chosenPort, {reconnect: true});
     socket.on("/twitter/", function(data) {
       console.log(data);
       var tweetHtml = "Updated last at " + (new Date()).toString() + "<br>";

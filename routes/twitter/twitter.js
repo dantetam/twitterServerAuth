@@ -586,7 +586,7 @@ router.get('/', function(req, res, next) {
   }).every(process.env.SERVER_MS_DELAY, 'ms').start.now();
 
   //res.send("The server is processing a chosen topic.");
-  res.render('twitterEndpoint', {});
+  res.render('twitterEndpoint', {port: process.env.PORT || 3000});
 });
 
 module.exports = router;
