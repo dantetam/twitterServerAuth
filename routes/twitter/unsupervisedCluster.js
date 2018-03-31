@@ -220,6 +220,35 @@ var self = {
     );
   },
 
+  getAvgSentimentFromSentence: function(sentenceTokens, next) {
+    var vecLookups = [];
+    for (let token of sentenceTokens) {
+      let vecLookup = function(next) {
+        self.getSentimentVec(token, next);
+      };
+      vecLookups.push(vecLookup);
+    }
+
+    async.parallel(
+      vecLookups,
+      function(err, vectors) { //Final callback after parallel execution
+        if (err) throw err;
+        var result = [0, 0];
+        for (var i = vectors.length - 1; i >= 0; i--) {
+          if (vectors[i] === null) {
+            vectors.splice(i, 1);
+          }
+          else {
+            result[0] += vectors[i][0] * vectors[i][1];
+            result[1] += vectors[i][1];
+          }
+        }
+        result[1] /= vectors.length;
+        next(null, result);
+      }
+    );
+  },
+
   /**
   Wait for all sentences to be transformed into vectors, and then return execute a callback with the results.
   */

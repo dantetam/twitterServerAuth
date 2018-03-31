@@ -69,18 +69,10 @@ function queryTweetsFromIdList(tweetDataIdList, next) {
 }
 
 
-function queryUniqueTweetsTest(beginDate, endData, callback) {
-  var query = {};
-  var dataInclude = {author: 1, text: 1, creationTime: 1};
-  if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
-  if (beginDate && endDate) {
-    query['creationTime'] = {
-      $gte: new Date(beginDate),
-      $lt: new Date(endDate)
-    };
-  }
+function queryLargeCorpusTweets(callback) {
+  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
 
-  var collectedSampleTweets = null;
+  var properNounTokens = null;
 
   async.waterfall([
     function(next) {
@@ -88,32 +80,78 @@ function queryUniqueTweetsTest(beginDate, endData, callback) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      Tweet.group({
-          $keyf : function(doc){
-              return {
-                  key : doc.text.substring(0,1) // extract URL base here
-              }
-          },
-          $reduce : function(curr, result){
-              result.count++
-          },
-          initial : {
-              count: 0
-          }
-      });
+      Tweet.aggregate(
+        [
+          {$match: {}},
+          {$project: {_id: 1, text: 1}},
+          //{"$limit": SMALL_QUERY_LIMIT}
+          {$sample: {size: LARGE_QUERY_LIMIT}}
+        ],
+        function(err, sampleTweets) {
+          if (err) throw err;
+          var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+          next(null, tweetStrings);
+        }
+      );
     }
-  ], function(err, result) {
+  ], function(err, tweetStrings) {
     if (err) throw err;
-    if (callback) {
-      callback(null, sentimentData);
-    }
+    callback(err, tweetStrings);
   });
+}
+
+
+function findLargeSetProperNouns(callback) {
+  async.waterfall([
+    function(next) {
+      queryLargeCorpusTweets(next);
+    },
+    function(tweetStrings, next) { //Find a not random subsampling of tweets to show
+      var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
+      var properNounSet = twitterAnalysis.findUnionDoubleArrTokens(properNounTokens);
+      next(null, properNounTokens);
+    }
+  ], function(err, results) {
+    if (err) throw err;
+    callback(err, results);
+  });
+}
+
+
+function findUserSentimentOnTopics(screen_name, topicsList) {
+
+}
+
+function findTweetSentimentOnTopics(doubleArrTokens, topicsList, next) {
+  var topicsObj = {};
+  for (topic in topicsList) topicsObj[topic] = null;
+  for (var arrTokens of doubleArrTokens) { //For every sentence
+    //Get the averaged sentiment vector
+    //and then check which tokens it has.
+    //Update the sentiment for chosen topics i.e. "i love mustard" and topicsList = ["mustard"],
+    //then update topicsObj["mustard"] = [2.8, 0.5];
+    var sentimentVecCallback = function(err, avgSentimentVec) {
+      for (var token of arrTokens) {
+        if (topicsObj[token] === null) {
+          topicsObj[token] = result;
+        }
+        else if (Array.isArray(topicsObj[token])) {
+          topicsObj[token][0] += avgSentimentVec[0];
+          topicsObj[token][1] += avgSentimentVec[1];
+        }
+      }
+    };
+    cluster.getAvgSentimentFromSentence(arrTokens, sentimentVecCallback);
+  }
+  if (next) {
+    next(null, topicsObj);
+  }
 }
 
 
 function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
   var query = {};
-  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
   if (beginDate && endDate) {
     query['creationTime'] = {
@@ -173,7 +211,7 @@ and finally, send the clusters in a pretty string format to the response.
 */
 function queryTweetsTopicGrouping(beginDate, endDate, response) {
   var query = {};
-  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   if (beginDate && endDate) {
     query['creationTime'] = {
       $gte: new Date(beginDate),
@@ -216,7 +254,7 @@ and finally, send the clusters in a pretty string format to the response.
 */
 function queryTweetsCluster(queryString, beginDate, endDate, response) {
   var query = {};
-  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
   if (beginDate && endDate) {
     query['creationTime'] = {
@@ -269,7 +307,7 @@ and send the tree in a stringified format to the response.
 */
 function queryTweetsMst(queryString, beginDate, endDate, response) {
   var query = {};
-  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
   if (beginDate && endDate) {
     query['creationTime'] = {
@@ -327,7 +365,7 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
 
 function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) {
   var query = {};
-  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
   if (beginDate && endDate) {
     query['creationTime'] = {
@@ -399,7 +437,7 @@ and send these tweets to the response. The output mode defaults to JSON,
 with an option for text.
 */
 function queryData(query, response, outputMode) {
-  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
 
   async.waterfall([
     function(next) {
@@ -444,7 +482,7 @@ function queryData(query, response, outputMode) {
 
 
 function queryLotsOfTweets(response) {
-  var dataInclude = {author: 1, text: 1, creationTime: 1};
+  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   var query = {};
   async.waterfall([
     function(next) {
@@ -543,6 +581,14 @@ router.get('/user/:screenName', function(req, res, next) {
   });
 });
 
+
+router.get('/corpus', function(req, res, next) {
+  queryLargeCorpusTweets(function(err, tweets) {res.send(tweets);});
+});
+
+router.get('/corpusTopics', function(req, res, next) {
+  findLargeSetProperNouns(function(err, results) {res.send(results);});
+});
 
 router.get('/wordmap', function(req, res, next) {
   queryLotsOfTweets(res);

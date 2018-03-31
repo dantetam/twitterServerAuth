@@ -234,6 +234,23 @@ var self = module.exports = {
     return self.findAllProperNouns(self.sanitizeTweets(tweetsArr));
   },
 
+  findUnionDoubleArrTokens: function(doubleArrTokens) {
+    var recordedTokens = {};
+    for (var arrTokens of doubleArrTokens) {
+      for (var token of arrTokens) {
+        if (recordedTokens[token] === undefined) {
+          recordedTokens[token] = true;
+        }
+      }
+    }
+
+    var results = [];
+    for (var token in recordedTokens) {
+      results.push(token);
+    }
+    return results;
+  },
+
   /**
   A utility method: given an array of tweets either indexed as
   ["text1", "text2", ...] or
