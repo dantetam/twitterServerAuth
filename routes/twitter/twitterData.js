@@ -118,8 +118,19 @@ function findLargeSetProperNouns(callback) {
 }
 
 
-function findUserSentimentOnTopics(screen_name, topicsList) {
-
+function findUserSentimentOnTopics(screen_name, topicsList, callback) {
+  async.waterfall([
+    function(next) {
+      queryUserTweets(screen_name, next);
+    },
+    function(tweetObjs, next) {
+      var texts = tweetObjs.map(function(x) {return x["text"];});
+      var doubleArrTokens = twitterAnalysis.sanitizeTweets(texts);
+      findTweetSentimentOnTopics(doubleArrTokens, topicsList, next);
+    }
+  ], function(err, sentimentObj) {
+    callback(err, sentimentObj);
+  });
 }
 
 function findTweetSentimentOnTopics(doubleArrTokens, topicsList, next) {
@@ -146,6 +157,19 @@ function findTweetSentimentOnTopics(doubleArrTokens, topicsList, next) {
   if (next) {
     next(null, topicsObj);
   }
+}
+
+function queryUserTopicsVector(screenName, callback) {
+  async.waterfall([
+    function(next) {
+      findLargeSetProperNouns(next);
+    },
+    function(topicsList, next) {
+      findUserSentimentOnTopics(screenName, topicsList, next);
+    }
+  ], function(err, result) {
+    console.log(sentimentObj);
+  })
 }
 
 
@@ -524,6 +548,12 @@ router.get('/wordlookup/:searchTweetWord/:inspectWord', function(req, res, next)
     res.send(bigramCounts);
   };
   queryTweetsPredict(queryString, inspectWord, null, null, callback);
+});
+
+
+router.get('/userSentiment/:screenName', function(req, res, next) {
+  var screenName = req.params["screenName"];
+  queryUserTopicsVector(screenName, function(err, result) {});
 });
 
 
