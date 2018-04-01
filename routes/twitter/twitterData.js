@@ -126,6 +126,7 @@ function findUserSentimentOnTopics(screen_name, topicsList, callback) {
     function(tweetObjs, next) {
       var texts = tweetObjs.map(function(x) {return x["text"];});
       var doubleArrTokens = twitterAnalysis.sanitizeTweets(texts);
+      var properNounTokens = twitterAnalysis.findProperNounsFromStrings(texts);
       findTweetSentimentOnTopics(doubleArrTokens, topicsList, next);
     }
   ], function(err, sentimentObj) {
@@ -133,11 +134,11 @@ function findUserSentimentOnTopics(screen_name, topicsList, callback) {
   });
 }
 
-function findTweetSentimentOnTopics(doubleArrTokens, topicsList, next) {
+function findTweetSentimentOnTopics(doubleArrTokens, properNounTokens, topicsList, next) {
   var topicsObj = {};
   var sentimentVecRes = [];
-  for (topic in topicsList) topicsObj[topic] = null;
-  for (let arrTokens of doubleArrTokens) { //For every sentence
+  //for (topic in topicsList) topicsObj[topic] = null;
+  for (let arrTokens of properNounTokens) { //For every sentence
     //Get the averaged sentiment vector
     //and then check which tokens it has.
     //Update the sentiment for chosen topics i.e. "i love mustard" and topicsList = ["mustard"],
@@ -147,7 +148,8 @@ function findTweetSentimentOnTopics(doubleArrTokens, topicsList, next) {
       if (sentimentVecRes.length === doubleArrTokens.length) {
         for (let sentenceIndex = 0; sentenceIndex < doubleArrTokens.length; sentenceIndex++) {
           for (let token of doubleArrTokens[sentenceIndex]) {
-            if (topicsObj[token] === null) {
+            console.log(token + " " + topicsObj[token]);
+            if (topicsObj[token] === undefined) {
               topicsObj[token] = sentimentVecRes[sentenceIndex];
               console.log("Create " + token);
             }
