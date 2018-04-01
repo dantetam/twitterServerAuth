@@ -127,7 +127,7 @@ function findUserSentimentOnTopics(screen_name, topicsList, callback) {
       var texts = tweetObjs.map(function(x) {return x["text"];});
       var doubleArrTokens = twitterAnalysis.sanitizeTweets(texts);
       var properNounTokens = twitterAnalysis.findProperNounsFromStrings(texts);
-      findTweetSentimentOnTopics(doubleArrTokens, topicsList, next);
+      findTweetSentimentOnTopics(doubleArrTokens, properNounTokens, topicsList, next);
     }
   ], function(err, sentimentObj) {
     callback(err, sentimentObj);
@@ -135,23 +135,22 @@ function findUserSentimentOnTopics(screen_name, topicsList, callback) {
 }
 
 function findTweetSentimentOnTopics(doubleArrTokens, properNounTokens, topicsList, next) {
+  console.log(topicsList);
   var topicsObj = {};
   var sentimentVecRes = [];
   //for (topic in topicsList) topicsObj[topic] = null;
-  for (let arrTokens of properNounTokens) { //For every sentence
+  for (let arrTokens of doubleArrTokens) { //For every sentence
     //Get the averaged sentiment vector
     //and then check which tokens it has.
     //Update the sentiment for chosen topics i.e. "i love mustard" and topicsList = ["mustard"],
     //then update topicsObj["mustard"] = [2.8, 0.5];
     let sentimentVecCallback = function(err, avgSentimentVec) {
       sentimentVecRes.push(avgSentimentVec);
-      if (sentimentVecRes.length === doubleArrTokens.length) {
-        for (let sentenceIndex = 0; sentenceIndex < doubleArrTokens.length; sentenceIndex++) {
-          for (let token of doubleArrTokens[sentenceIndex]) {
-            console.log(token + " " + topicsObj[token]);
+      if (sentimentVecRes.length === properNounTokens.length) {
+        for (let sentenceIndex = 0; sentenceIndex < properNounTokens.length; sentenceIndex++) {
+          for (let token of properNounTokens[sentenceIndex]) {
             if (topicsObj[token] === undefined) {
               topicsObj[token] = sentimentVecRes[sentenceIndex];
-              console.log("Create " + token);
             }
             else if (Array.isArray(topicsObj[token])){
               topicsObj[token][0] += sentimentVecRes[sentenceIndex][0];

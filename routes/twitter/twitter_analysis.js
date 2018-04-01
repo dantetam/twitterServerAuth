@@ -24,10 +24,14 @@ var self = module.exports = {
     "to", "too", "under", "until", "up", "very", "was", "we", "we'd", "we'll", "we're", "we've", "were", "what", "what's", "when", "when's", "where", "where's",
     "which", "while", "who", "who's", "whom", "why", "why's", "with", "would", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves",
     "rt",
-    "youre", "doesnt", "dont", "aint", "couldnt", "shouldnt", "gonna", "wanna", "isnt", "arent", "wasnt", "werent", "hes", "shes", "mr", "mrs"]; //Also add common misspellings
+    "youre", "doesnt", "dont", "didnt", "aint", "couldnt", "shouldnt", "gonna", "wanna", "isnt", "arent", "wasnt", "werent", "hes", "shes", "mr", "mrs"]; //Also add common misspellings
     var result = {};
     for (var word of data) {
       result[word] = true;
+      if (result.indexOf("'") !== -1) {
+        wordChars = word.replace(/[^a-z0-9]/g, "");
+        result[wordChars] = true;
+      }
     }
     return result;
   },
@@ -127,8 +131,8 @@ var self = module.exports = {
   },
 
   findAllProperNouns: function(doubleArrTokens) {
-    for (var arrTokens of doubleArrTokens) {
-      for (var i = arrTokens.length - 1; i >= 0; i--) { //Go backwards since we remove elements i.e. 'arraylist trap'
+    for (let arrTokens of doubleArrTokens) {
+      for (let i = arrTokens.length - 1; i >= 0; i--) { //Go backwards since we remove elements i.e. 'arraylist trap'
         if (self.notNamedEntity(arrTokens[i]) || arrTokens[i].length <= 2) { //If the individual token is in the dict of stop words
           arrTokens.splice(i, 1);
         }
