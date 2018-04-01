@@ -393,19 +393,19 @@ function storeSingleTweetInData(status, next) {
   }
 
   Tweet.findOne({ 'idString': status["id_str"] }, function (err, result) {
-    if (result !== null) {
+    if (result === null) { //Callback with the already existing tweet in the database
       Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
         if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
           //Do not propogate errors
           next(null, null);
         }
         else if (next) {
-          next(null, tweet);
+          next(null, tweet._id);
         }
       });
     }
-    else { //Callback with the already existing tweet in the database
-      next(null, result);
+    else {
+      next(null, result._id);
     }
   });
 }
@@ -434,6 +434,7 @@ function storeUserTimelineInData(userTimelineJson, callback) {
       }
       //Extract from the RESTful API response and add to the TwitterUser schema
       var profileLinks = [userObj["profile_background_image_url_https"], userObj["profile_image_url_https"], userObj["profile_banner_url"]];
+      console.log(tweetIds);
       var userData = {
         idString: userObj["id_str"],
         screenName: userObj["screen_name"],
