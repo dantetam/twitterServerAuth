@@ -304,7 +304,7 @@ var self = {
     return intersection / union;
   },
 
-  //The "angle" similiarity of two vectors, where 1 represents parallel and 0 represents opposite facing vectors.
+  //The 'angle' similiarity of two vectors, where 1 represents parallel and 0 represents opposite facing vectors.
   cosineSimilarity: function(vecA, vecB) {
     if (vecA.length !== vecB.length) throw new Error("Cannot compute cos. similiarity of two unequal length vectors");
     var dotProduct = 0;
@@ -316,7 +316,8 @@ var self = {
     }
     magA = Math.sqrt(magA);
     magB = Math.sqrt(magB);
-    return dotProduct / (magA * magB);
+    if (magA * magB !== 0) return dotProduct / (magA * magB);
+    return dotProduct;
   },
 
   euclideanDist: function(vecA, vecB) {

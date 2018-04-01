@@ -28,7 +28,7 @@ var self = module.exports = {
     var result = {};
     for (var word of data) {
       result[word] = true;
-      if (result.indexOf("'") !== -1) {
+      if (word.indexOf("'") !== -1) {
         wordChars = word.replace(/[^a-z0-9]/g, "");
         result[wordChars] = true;
       }
@@ -171,10 +171,10 @@ var self = module.exports = {
       tfidf.addDocument(text);
     }
 
-    console.log("Measuring importance of word: " + word);
+    //console.log("Measuring importance of word: " + word);
     var result = 0;
     tfidf.tfidfs(word, function(i, measure) {
-      console.log('document #' + i + ' is ' + measure);
+      //console.log('document #' + i + ' is ' + measure);
       result += measure;
     });
     return result / texts.length;

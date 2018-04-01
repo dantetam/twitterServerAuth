@@ -135,7 +135,6 @@ function findUserSentimentOnTopics(screen_name, topicsList, callback) {
 }
 
 function findTweetSentimentOnTopics(doubleArrTokens, properNounTokens, topicsList, next) {
-  console.log(topicsList);
   var topicsObj = {};
   var sentimentVecRes = [];
   //for (topic in topicsList) topicsObj[topic] = null;
@@ -177,8 +176,49 @@ function queryUserTopicsVector(screenName, callback) {
       findUserSentimentOnTopics(screenName, topicsList, next);
     }
   ], function(err, sentimentObj) {
-    console.log(sentimentObj);
+    if (callback) {
+      callback(err, sentimentObj);
+    }
   })
+}
+
+
+function compareUsersTopicVectors(screenNameA, screenNameB, callback) {
+  async.waterfall([
+    function(next) {
+      queryUserTopicsVector(screenNameA, next);
+    },
+    function(sentimentVecUserA, next) {
+      queryUserTopicsVector(screenNameB, function(err, sentimentVecUserB) {
+        next(null, sentimentVecUserA, sentimentVecUserB);
+      });
+    },
+    function(sentimentVecUserA, sentimentVecUserB, next) {
+      var similiarity = cosineSimilaritySentimentObj(sentimentVecUserA, sentimentVecUserB);
+      next(null, sentimentVecUserA, sentimentVecUserB, similiarity);
+    }
+  ], function(err, sentimentVecUserA, sentimentVecUserB, similiarity) {
+    if (callback) {
+      callback(err, sentimentVecUserA, sentimentVecUserB, similiarity);
+    }
+  })
+}
+
+
+//The 'angle' similiarity of two sentiment vectors, with some overlapping and disjoint keys
+//A sentiment vector is organized in the form {"word": [polarity, intensity]}
+function cosineSimilaritySentimentObj(objA, objB) {
+  var dotProduct = 0;
+  var magA = 0, magB = 0;
+  for (var key in objA) {
+    if (objB[key] !== undefined) {
+      magA += objA[key][0] * objA[key][0];
+      magB += objB[key][0] * objB[key][0];
+      dotProduct = objA[key][0] * objB[key][0];
+    }
+  }
+  if (magA * magB !== 0) return dotProduct / (magA * magB);
+  return dotProduct;
 }
 
 
@@ -562,7 +602,19 @@ router.get('/wordlookup/:searchTweetWord/:inspectWord', function(req, res, next)
 
 router.get('/userSentiment/:screenName', function(req, res, next) {
   var screenName = req.params["screenName"];
-  queryUserTopicsVector(screenName, function(err, result) {});
+  queryUserTopicsVector(screenName, function(err, result) {res.send(result);});
+});
+
+
+router.get('/userSentiment/:screenNameA/:screenNameB', function(req, res, next) {
+  var screenNameA = req.params["screenNameA"];
+  var screenNameB = req.params["screenNameB"];
+  compareUsersTopicVectors(screenNameA, screenNameB, function(err, sentimentVecUserA, sentimentVecUserB, similiarity) {
+    res.write("Query for User Sentiment, between users '" + screenNameA + "' and '" + screenNameB + "':\n");
+    res.write("Twitter User Sentiment Vector Similiarity: " + similiarity + "\n\n");
+    res.write(JSON.stringify(sentimentVecUserA) + "\n\n");
+    res.write(JSON.stringify(sentimentVecUserB) + "\n\n");
+  });
 });
 
 
