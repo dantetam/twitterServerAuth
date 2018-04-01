@@ -243,7 +243,7 @@ var self = {
             result[1] += vectors[i][1];
           }
         }
-        result[1] /= vectors.length;
+        if (vectors.length !== 0) result[1] /= vectors.length;
         next(null, result);
       }
     );

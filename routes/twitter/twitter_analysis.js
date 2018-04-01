@@ -112,13 +112,18 @@ var self = module.exports = {
     return null;
   },
 
+  isNumber: function(str) {
+    return /^[0-9]*$/g.test(str);
+  },
+
   notNamedEntity: function(word) {
     var lower = word.toLowerCase();
     //Twitter users often use letter 'stretches' like 'soooo' to convey emotion, which bypass the dictionary
     //This corresponds to the third option
     return trieDictionary.findWord(lower) ||
       lower.indexOf("https") !== -1 ||
-      (!trieDictionary.findWord(lower) && self.majorityLetter(lower));
+      (!trieDictionary.findWord(lower) && self.majorityLetter(lower)) ||
+      self.isNumber(lower);
   },
 
   findAllProperNouns: function(doubleArrTokens) {
@@ -243,12 +248,7 @@ var self = module.exports = {
         }
       }
     }
-
-    var results = [];
-    for (var token in recordedTokens) {
-      results.push(token);
-    }
-    return results;
+    return Object.keys(recordedTokens);
   },
 
   /**

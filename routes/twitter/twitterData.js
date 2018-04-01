@@ -109,7 +109,7 @@ function findLargeSetProperNouns(callback) {
     function(tweetStrings, next) { //Find a not random subsampling of tweets to show
       var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
       var properNounSet = twitterAnalysis.findUnionDoubleArrTokens(properNounTokens);
-      next(null, properNounTokens);
+      next(null, properNounSet);
     }
   ], function(err, results) {
     if (err) throw err;
@@ -135,27 +135,35 @@ function findUserSentimentOnTopics(screen_name, topicsList, callback) {
 
 function findTweetSentimentOnTopics(doubleArrTokens, topicsList, next) {
   var topicsObj = {};
+  var sentimentVecRes = [];
   for (topic in topicsList) topicsObj[topic] = null;
-  for (var arrTokens of doubleArrTokens) { //For every sentence
+  for (let arrTokens of doubleArrTokens) { //For every sentence
     //Get the averaged sentiment vector
     //and then check which tokens it has.
     //Update the sentiment for chosen topics i.e. "i love mustard" and topicsList = ["mustard"],
     //then update topicsObj["mustard"] = [2.8, 0.5];
-    var sentimentVecCallback = function(err, avgSentimentVec) {
-      for (var token of arrTokens) {
-        if (topicsObj[token] === null) {
-          topicsObj[token] = result;
+    let sentimentVecCallback = function(err, avgSentimentVec) {
+      sentimentVecRes.push(avgSentimentVec);
+      if (sentimentVecRes.length === doubleArrTokens.length) {
+        for (let sentenceIndex = 0; sentenceIndex < doubleArrTokens.length; sentenceIndex++) {
+          for (let token of doubleArrTokens[sentenceIndex]) {
+            if (topicsObj[token] === null) {
+              topicsObj[token] = sentimentVecRes[sentenceIndex];
+              console.log("Create " + token);
+            }
+            else if (Array.isArray(topicsObj[token])){
+              topicsObj[token][0] += sentimentVecRes[sentenceIndex][0];
+              topicsObj[token][1] += sentimentVecRes[sentenceIndex][1];
+            }
+          }
         }
-        else if (Array.isArray(topicsObj[token])) {
-          topicsObj[token][0] += avgSentimentVec[0];
-          topicsObj[token][1] += avgSentimentVec[1];
+        if (next) {
+          next(null, topicsObj);
+          return;
         }
       }
     };
     cluster.getAvgSentimentFromSentence(arrTokens, sentimentVecCallback);
-  }
-  if (next) {
-    next(null, topicsObj);
   }
 }
 
@@ -167,7 +175,7 @@ function queryUserTopicsVector(screenName, callback) {
     function(topicsList, next) {
       findUserSentimentOnTopics(screenName, topicsList, next);
     }
-  ], function(err, result) {
+  ], function(err, sentimentObj) {
     console.log(sentimentObj);
   })
 }
