@@ -1,13 +1,13 @@
 var express = require('express');
 var router = express.Router();
-var User = require('../models/user');
+var User = require('../models/loginAuth/user');
 var async = require('async');
 
 var websiteRequest = require("./website-search/websiteRequest.js");
 
-var Tweet = require('../models/tweet');
-var WebPage = require("../models/webpage");
-var Website = require("../models/website");
+var Tweet = require('../models/twitterApi/tweet');
+var WebPage = require("../models/loginAuth/webpage");
+var Website = require("../models/loginAuth/website");
 
 function getServerStatus(next) {
   Tweet.count({}, function (err, count) {

@@ -2,8 +2,8 @@ var readline = require('readline');
 var fs = require('fs');
 var async = require('async');
 
-var WebPage = require("../../models/webpage");
-var Website = require("../../models/website");
+var WebPage = require("../../models/loginAuth/webpage");
+var Website = require("../../models/loginAuth/website");
 
 var self = {
 

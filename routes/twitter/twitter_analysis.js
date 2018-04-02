@@ -1,15 +1,10 @@
-var stemmer = require('./stemmer.js');
+var textUtil = require("./textanalysis/text_util.js");
+var stemmer = require('./textanalysis/stemmer.js');
 var natural = require('natural');
 
-var trieDictionary = require("./trieDictionary.js");
+var trieDictionary = require("./textanalysis/trieDictionary.js");
 
 var self = module.exports = {
-
-  //Sourced from https://stackoverflow.com/questions/4180363/javascript-regexp-replacing-1-with-f1
-  //This converts a joined set of camelCase words into fully separated words through a regex.
-  camelCaseSeparate: function(stringValue) {
-    return stringValue.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1");
-  },
 
   /**
   Return a dictionary where dict[word] === true if word is a stop word.
@@ -44,7 +39,7 @@ var self = module.exports = {
     //Capture all hashtag regex patterns, which returns two groups for each full match:
     //the hashtag symbol, which is discarded; and the hashtag topic, which is divided into words since it is usually camelCase
     var tweetSplitHashtags = tweet.replace(/(\#)([a-zA-Z]+)/g, function(match, group1, group2, index, original) {
-      return self.camelCaseSeparate(group2);
+      return textUtil.camelCaseSeparate(group2);
     });
 
     var stopWordsDict = self.getStopWords();
@@ -97,36 +92,13 @@ var self = module.exports = {
   },
   */
 
-  /**
-  Return a character of a word if the character has count greater or equal to _proportion_.
-  This only guarantees existence, not maximum.
-  */
-  majorityLetter: function(str, proportion = 0.5) {
-    var data = {};
-    for (var i = 0; i < str.length; i++) {
-      var char = str.charAt(i);
-      if (data[char] === undefined) {
-        data[char] = 0;
-      }
-      data[char]++;
-      if (data[char] >= str.length * proportion) {
-        return char;
-      }
-    }
-    return null;
-  },
-
-  isNumber: function(str) {
-    return /^[0-9]*$/g.test(str);
-  },
-
   notNamedEntity: function(word) {
     var lower = word.toLowerCase();
     //Twitter users often use letter 'stretches' like 'soooo' to convey emotion, which bypass the dictionary
     //This corresponds to the third option
     return trieDictionary.findWord(lower) ||
       lower.indexOf("https") !== -1 ||
-      (!trieDictionary.findWord(lower) && self.majorityLetter(lower)) ||
+      (!trieDictionary.findWord(lower) && textUtil.majorityLetter(lower)) ||
       self.isNumber(lower);
   },
 

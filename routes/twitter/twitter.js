@@ -8,9 +8,9 @@ var authKeys = require('./twitter_auth.json');
 var twitterAnalysis = require('./twitter_analysis.js');
 var cluster = require('./unsupervisedCluster.js');
 
-var Tweet = require("../../models/tweet");
-var UniqueTweet = require("../../models/uniqueTweet");
-var TwitterUser = require("../../models/twitterUser");
+var Tweet = require("../../models/twitterApi/tweet");
+var UniqueTweet = require("../../models/twitterApi/uniqueTweet");
+var TwitterUser = require("../../models/twitterApi/twitterUser");
 var siteData = require("./storedTwitterConfig.js");
 
 var focusTopicsCountMax = 25;

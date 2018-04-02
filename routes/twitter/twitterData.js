@@ -5,9 +5,11 @@ var mongoose = require('mongoose');
 var MongoClient = require('mongodb').MongoClient;
 
 var twitterAnalysis = require('./twitter_analysis.js');
-var Tweet = require("../../models/tweet");
-var TwitterUser = require("../../models/twitterUser");
+var Tweet = require("../../models/twitterApi/tweet");
+var UniqueTweet = require("../../models/twitterApi/uniqueTweet");
+var TwitterUser = require("../../models/twitterApi/twitterUser");
 var cluster = require('./unsupervisedCluster.js');
+var metrics = require("./math/metrics.js");
 var util = require('../util.js');
 
 var SMALL_QUERY_LIMIT = 200;
@@ -363,7 +365,7 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
       cluster.testCluster(tweetArrTokens, next);
     }
   ], function(err, clusters) {
-    var shannonIndex = cluster.modifiedShannonIndex(clusters);
+    var shannonIndex = metrics.modifiedShannonIndex(clusters);
     response.write("Modified Shannon Index (Diversity Index): " + shannonIndex + "\n \n \n");
     var tweetClusters = twitterAnalysis.stringifyClustersTweets(collectedSampleTweets, clusters);
     response.end(JSON.stringify(tweetClusters));
