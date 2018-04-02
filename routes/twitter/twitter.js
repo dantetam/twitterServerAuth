@@ -18,6 +18,7 @@ var focusTopicsCountMax = 25;
 //This method is passed in the socket io communication objects
 //(initialized and retrieved upon connection within the main server).
 router.initConnectToSocket = function(socket, io) {
+  console.log("Connection created between main server and twitter endpoint client");
   router.sendTweetsSocketMsg = function(tweets) {
     socket.emit('/twitter/', {
       "tweets": tweets

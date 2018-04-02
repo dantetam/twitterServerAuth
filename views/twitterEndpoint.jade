@@ -21,7 +21,8 @@ block content
       return tweet.user.screen_name + " (" + tweet.user.name + "): " + tweet.text;
     };
   
-    var socket = io.connect('https://localhost:' + chosenPort, {reconnect: true});
+    var url = chosenPort + "" === "3000" ? "localhost:3000": "https://localhost:" + chosenPort;
+    var socket = io.connect(url, {reconnect: true});
     socket.on("/twitter/", function(data) {
       console.log(data);
       var tweetHtml = "Updated last at " + (new Date()).toString() + "<br>";
