@@ -1,4 +1,4 @@
-var textUtil = require("./textanalysis/text_util.js");
+var textUtil = require("./textanalysis/textUtil.js");
 
 var Tweet = require("../../models/twitterApi/tweet");
 var UniqueTweet = require("../../models/twitterApi/uniqueTweet");

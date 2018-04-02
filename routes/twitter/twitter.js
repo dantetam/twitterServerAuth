@@ -4,8 +4,8 @@ var router = express.Router();
 var Repeat = require("repeat");
 var request = require("request");
 
-var authKeys = require('./twitter_auth.json');
-var twitterAnalysis = require('./twitter_analysis.js');
+var authKeys = require('./twitterAuth.json');
+var twitterAnalysis = require('./twitterAnalysis.js');
 var twitterStoreUtil = require('./twitterStoreDatabase.js');
 var cluster = require('./unsupervisedCluster.js');
 
@@ -120,10 +120,7 @@ Convert the tweets JSON into a readable text format for display: username + twee
 function parseTweets(tweetsJson) {
   var results = [];
   var statuses = tweetsJson["statuses"];
-  for (var i = 0; i < statuses.length; i++) {
-    var status = statuses[i];
-    results.push(status["user"]["name"] + ": " + status["text"]);
-  }
+  var results = statuses.map(function(status) {return status["user"]["name"] + ": " + status["text"];});
   return results;
 }
 
@@ -158,10 +155,7 @@ function parseTopics(topicsJson) {
     return null;
   }
   var trends = topicsJson[0]["trends"];
-  var results = [];
-  for (var trend of trends) {
-    results.push(trend["query"]);
-  }
+  var results = trends.map(function(trendJson) {return trendJson["query"];});
   return results;
 }
 

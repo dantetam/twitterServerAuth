@@ -1,6 +1,7 @@
-var textUtil = require("./textanalysis/text_util.js");
+var textUtil = require("./textanalysis/textUtil.js");
 var stemmer = require('./textanalysis/stemmer.js');
 var natural = require('natural');
+var util = require("../util.js");
 
 var trieDictionary = require("./textanalysis/trieDictionary.js");
 
@@ -177,7 +178,7 @@ var self = module.exports = {
   /*
   Takes in an array of an array of tokens, and returns a sorted list of 'dictionary' entries indexed by [word, count]
   */
-  wordCount: function(doubleArrTokens, cutoffCountInc = 5) {
+  wordCount: function(doubleArrTokens, cutoffCount = 5) {
     var results = {};
     for (var i = 0; i < doubleArrTokens.length; i++) {
       var listTokens = doubleArrTokens[i];
@@ -193,7 +194,7 @@ var self = module.exports = {
         results[token]++;
       }
     }
-    var listSortedResults = self.sortDictIntoList(results, cutoffCountInc);
+    var listSortedResults = util.sortDictIntoList(results, cutoffCount);
     return listSortedResults;
   },
 
@@ -250,29 +251,6 @@ var self = module.exports = {
       result.push(clusterString);
     }
     return result;
-  },
-
-
-  /**
-  Utility method to convert a dictionary of keys and counts, into a sorted list in descending order
-  i.e. {a: 5, b: 2, c: 3} -> [[a, 5], [c, 3], [b, 2]]
-  */
-  sortDictIntoList: function(dictionary, cutoffCountInc = 5) {
-    var listSortedResults = [];
-    for (var word in dictionary) {
-      if (dictionary.hasOwnProperty(word)) {
-        if (dictionary[word] < cutoffCountInc) {
-          delete dictionary[word];
-        }
-        else {
-          listSortedResults.push([word, dictionary[word]]);
-        }
-      }
-    }
-    listSortedResults.sort(function(a, b) {
-      return b[1] - a[1]; //Sort by word count in descending order
-    });
-    return listSortedResults;
   }
 
 };

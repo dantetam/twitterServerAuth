@@ -4,7 +4,7 @@ var router = express.Router();
 var mongoose = require('mongoose');
 var MongoClient = require('mongodb').MongoClient;
 
-var twitterAnalysis = require('./twitter_analysis.js');
+var twitterAnalysis = require('./twitterAnalysis.js');
 var Tweet = require("../../models/twitterApi/tweet");
 var UniqueTweet = require("../../models/twitterApi/uniqueTweet");
 var TwitterUser = require("../../models/twitterApi/twitterUser");
@@ -641,14 +641,14 @@ router.get('/user/:screenName', function(req, res, next) {
           jsonObjResult["tweets"] = [];
           for (var i = 0; i < tweetStrings.length; i++) {
             var newLineRemovedTweet = tweetStrings[i].replace(/\r?\n|\r/, "");
-            var compiledObj = {};
+            var compiledObj = {};  //Compile every tweet and its data into one object
             compiledObj["text"] = newLineRemovedTweet;
             compiledObj["sentiment_polarity"] = sentimentData.polarity[i];
             compiledObj["sentiment_intensity"] = sentimentData.intensity[i];
             compiledObj["important_tokens"] = sentimentData.sentenceTokens[i];
             jsonObjResult["tweets"].push(compiledObj);
           }
-          res.send(jsonObjResult);
+          res.send(jsonObjResult); //Send an array of analyzed tweets to the response
         }
       };
 
