@@ -196,7 +196,7 @@ function compareUsersTopicVectors(screenNameA, screenNameB, callback) {
       });
     },
     function(sentimentVecUserA, sentimentVecUserB, next) {
-      var similiarity = cosineSimilaritySentimentObj(sentimentVecUserA, sentimentVecUserB);
+      var similiarity = metrics.cosineSimilaritySentimentObj(sentimentVecUserA, sentimentVecUserB);
       next(null, sentimentVecUserA, sentimentVecUserB, similiarity);
     }
   ], function(err, sentimentVecUserA, sentimentVecUserB, similiarity) {
@@ -204,23 +204,6 @@ function compareUsersTopicVectors(screenNameA, screenNameB, callback) {
       callback(err, sentimentVecUserA, sentimentVecUserB, similiarity);
     }
   })
-}
-
-
-//The 'angle' similiarity of two sentiment vectors, with some overlapping and disjoint keys
-//A sentiment vector is organized in the form {"word": [polarity, intensity]}
-function cosineSimilaritySentimentObj(objA, objB) {
-  var dotProduct = 0;
-  var magA = 0, magB = 0;
-  for (var key in objA) {
-    if (objB[key] !== undefined) {
-      magA += objA[key][0] * objA[key][0];
-      magB += objB[key][0] * objB[key][0];
-      dotProduct = objA[key][0] * objB[key][0];
-    }
-  }
-  if (magA * magB !== 0) return dotProduct / (magA * magB);
-  return dotProduct;
 }
 
 

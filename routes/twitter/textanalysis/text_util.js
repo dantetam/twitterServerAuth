@@ -20,6 +20,19 @@ var self = {
     return stringValue.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1");
   },
 
+  //"RT @screen_name: tweet..." -> "tweet..."
+  removeRetweet: function(str) {
+    var tokens = str.match(/\S+/g) || [];
+    if (tokens.length >= 2 && tokens[0] === "RT") {
+      var cutLength = 2 + 1 + tokens[1].length; //Remove first two tokens
+      //It's done this way to preserve original whitespace of the tweet
+      return str.substring(cutLength);
+    }
+    else {
+      return str;
+    }
+  },
+
   /**
   Return a character of a word if the character has count greater or equal to _proportion_.
   This only guarantees existence, not maximum.

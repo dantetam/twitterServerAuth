@@ -6,6 +6,7 @@ var request = require("request");
 
 var authKeys = require('./twitter_auth.json');
 var twitterAnalysis = require('./twitter_analysis.js');
+var twitterStoreUtil = require('./twitterStoreDatabase.js');
 var cluster = require('./unsupervisedCluster.js');
 
 var Tweet = require("../../models/twitterApi/tweet");
@@ -175,7 +176,7 @@ function getUserTimelineTweets(screenName, callback) {
       getUserTimeline(bearerToken, screenName, next);
     },
     function(err, resp, body, next) {
-      storeUserTimelineInData(body, next);
+      twitterStoreUtil.storeUserTimelineInData(body, next);
     }
   ], function(err, result) {
     if (err && callback) {
@@ -207,7 +208,7 @@ function getTweetsWithChosenTopic(topic, word, next) {
     },
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
-      storeTweetsInData(body);
+      twitterStoreUtil.storeTweetsInData(body);
       getWordImportanceInTopic(tweetStrings, null);
 
       var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings, 2); //Get the word count of all words
@@ -249,7 +250,7 @@ function getTweetsWithTrendingTopic(word, next) {
     },
     function(err, resp, body, next) {
       var tweetStrings = parseTweets(body);
-      storeTweetsInData(body);
+      twitterStoreUtil.storeTweetsInData(body);
       getWordImportanceInTopic(tweetStrings, null);
 
       next(null, body);
@@ -329,146 +330,18 @@ function getWordImportanceInTopic(tweetStrings, specialWord) {
   twitterAnalysis.tfidfIndividualAvgMeasure(groupedTweets, specialWord);
 }
 
-/*
-Take the JSON data of the retrieved tweets and store them into the MongoDB database,
-using the Tweet schema defined in "/models/tweet.js".
-*/
-function storeTweetsInData(tweetsJson, next) {
-  var results = [];
-  var statuses = tweetsJson["statuses"];
-  for (var i = 0; i < statuses.length; i++) {
-    var status = statuses[i];
-
-    //RT @screen_name: tweet...
-    var removeRetweet = function(str) {
-      var tokens = str.match(/\S+/g) || [];
-      if (tokens.length >= 2 && tokens[0] === "RT") {
-        var cutLength = 2 + 1 + tokens[1].length; //Remove first two tokens
-        //It's done this way to preserve original whitespace of the tweet
-        return str.substring(cutLength);
-      }
-      else {
-        return str;
-      }
-    }
-
-    //Using the data gathered from status, store it in the MongoDB schema compactly
-    var tweetData = {
-      idString: status["id_str"],
-      screenName: status["user"]["screen_name"],
-      authorPrettyName: status["user"]["name"],
-      text: status["text"],
-      creationTime: new Date(status["created_at"])
-    }
-    if (status["entities"]["media"] !== undefined) { //Optional hyperlinks
-      tweetData.mediaLinks = status["entities"]["media"].map(function(mediaEntry) {return mediaEntry["media_url_https"];});
-    }
-    if (status["entities"]["urls"] !== undefined) {
-      tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
-    }
-    Tweet.create(tweetData, function(err, tweet) {}); //Create this entry if it does not exist
-
-    //Unique tweets (i.e. without retweets) are stored again, and are unique,
-    //such that user2: RT @user1: ..., user3: RT @user1: ...
-    //are considered the same and stored only once.
-    tweetData["text"] = removeRetweet(status["text"]);
-    UniqueTweet.create(tweetData, function(err, tweet) {});
-  }
-}
-function storeSingleTweetInData(status, next) {
-  var results = [];
-
-  //Using the data gathered from status, store it in the MongoDB schema compactly
-  var tweetData = {
-    idString: status["id_str"],
-    screenName: status["user"]["screen_name"],
-    authorPrettyName: status["user"]["name"],
-    text: status["text"],
-    creationTime: new Date(status["created_at"])
-  }
-  if (status["entities"]["media"] !== undefined) { //Optional hyperlinks
-    tweetData.mediaLinks = status["entities"]["media"].map(function(mediaEntry) {return mediaEntry["media_url_https"];});
-  }
-  if (status["entities"]["urls"] !== undefined) {
-    tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
-  }
-
-  Tweet.findOne({ 'idString': status["id_str"] }, function (err, result) {
-    if (result === null) { //Callback with the already existing tweet in the database
-      Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
-        if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
-          //Do not propogate errors
-          next(null, null);
-        }
-        else if (next) {
-          next(null, tweet._id);
-        }
-      });
-    }
-    else {
-      next(null, result._id);
-    }
-  });
-}
-
-
-function storeUserTimelineInData(userTimelineJson, callback) {
-  if (userTimelineJson.length === 0) {
-    callback(null, null);
-    return;
-  }
-  var userObj = userTimelineJson[0]["user"];
-
-  var tweetIdCreations = [];
-  for (let tweet of userTimelineJson) {
-    let tweetIdCreationFunc = function(next) {
-      storeSingleTweetInData(tweet, next);
-    };
-    tweetIdCreations.push(tweetIdCreationFunc);
-  }
-
-  async.parallel(
-    tweetIdCreations,
-    function(err, tweetIds) { //Final callback after parallel execution (i.e. all tweet ids have been created or found)
-      if (err) {
-        throw err;
-      }
-      //Extract from the RESTful API response and add to the TwitterUser schema
-      var profileLinks = [userObj["profile_background_image_url_https"], userObj["profile_image_url_https"], userObj["profile_banner_url"]];
-      console.log(tweetIds);
-      var userData = {
-        idString: userObj["id_str"],
-        screenName: userObj["screen_name"],
-        authorPrettyName: userObj["name"],
-        profileLinks: profileLinks.filter(function(x) {return x !== undefined;}),
-        userTweetIds: tweetIds
-      }
-      /*
-      TwitterUser.findOne({ 'screenName': userObj["screen_name"] }, function (err, result) {
-        if (result === null) {
-
-        }
-      });
-      */
-      TwitterUser.create(userData, function(err, twitterUser) {
-        if (err && callback) {
-          callback(err, null);
-        }
-        else if (callback) {
-          callback(err, twitterUser);
-        }
-      });
-    }
-  );
-}
-
 
 router.get("/topicgroups", function(req, res, next) {
+  var outputMode = req.query["output"];
   getProperNounsFromTweets(function(err, tweetsTextArr, clusters) {
     var result = twitterAnalysis.stringifyClustersTweets(tweetsTextArr, clusters);
-    res.send(result);
-    //res.write(JSON.stringify(result));
-    //res.end("The server chose a topic to test topic associations.");
+    if (outputMode === "text") {
+      res.write("The server chose a topic to test topic associations.");
+      res.end(JSON.stringify(result));
+    }
+    else {
+      res.send(result);
+    }
   });
 });
 
@@ -498,14 +371,10 @@ router.delete("/focus/:topic", function(req, res, next) {
   res.send(siteData["focusTopics"]);
 });
 
+
 /*
 router.get("/randomSample", function(req, res, next) {
-  res.send("Here is a collection of random tweets sampled from the database.");
-  // Get random data using mongooseRandom query library
-  Tweet.findRandom().limit(25).exec(function (err, tweets) {
-    console.log(tweets);
-    //res.send(tweets);
-  });
+
 });
 */
 

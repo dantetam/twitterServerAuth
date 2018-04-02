@@ -99,5 +99,22 @@ var self = module.exports = {
       result += clusterWeight * Math.log(clusterWeight);
     }
     return Math.exp(-result);
+  },
+
+  //The 'angle' similiarity of two sentiment vectors, with some overlapping and disjoint keys
+  //A sentiment vector is organized in the form {"word": [polarity, intensity]}
+  cosineSimilaritySentimentObj: function(objA, objB) {
+    var dotProduct = 0;
+    var magA = 0, magB = 0;
+    for (var key in objA) {
+      if (objB[key] !== undefined) {
+        magA += objA[key][0] * objA[key][0];
+        magB += objB[key][0] * objB[key][0];
+        dotProduct = objA[key][0] * objB[key][0];
+      }
+    }
+    if (magA * magB !== 0) return dotProduct / (magA * magB);
+    return dotProduct;
   }
+
 };
