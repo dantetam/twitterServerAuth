@@ -100,7 +100,7 @@ var self = module.exports = {
     return trieDictionary.findWord(lower) ||
       lower.indexOf("https") !== -1 ||
       (!trieDictionary.findWord(lower) && textUtil.majorityLetter(lower)) ||
-      self.isNumber(lower);
+      textUtil.isNumber(lower);
   },
 
   findAllProperNouns: function(doubleArrTokens) {

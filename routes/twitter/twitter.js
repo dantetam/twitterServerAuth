@@ -53,7 +53,7 @@ Read API keys from the hidden file, generate a bearer token from Twitter's OAuth
 and then start another callback.
 */
 function findBearerToken(userTopic, next) {
-  if (userTopic !== null && userTopic !== process.env.CURRENT_TOPIC) return; //Do not continue old repeating requests
+  //if (userTopic !== null && userTopic !== process.env.CURRENT_TOPIC) return; //Do not continue old repeating requests
 
   var key = authKeys.consumer_key;
   var secret = authKeys.consumer_secret;
@@ -74,7 +74,7 @@ function findBearerToken(userTopic, next) {
   }, function(err, resp, body) {
     if (err) throw err;
     process.env.CURRENT_BEARER_TOKEN = body["access_token"];
-    if (next) next(null, err, resp, body);
+    if (next) next(err, resp, body);
   });
 }
 
@@ -110,7 +110,7 @@ function getTweets(bearerToken, userTopic, next) {
     },
     json: true
   }, function(err, jsonResponse, body) {
-    if (next) next(null, err, jsonResponse, body);
+    if (next) next(err, jsonResponse, body);
   });
 }
 
@@ -165,7 +165,7 @@ function getUserTimelineTweets(screenName, callback) {
     function(next) {
       findBearerToken(null, next);
     },
-    function(err, resp, body, next) {
+    function(resp, body, next) {
       var bearerToken = body["access_token"];
       getUserTimeline(bearerToken, screenName, next);
     },
@@ -189,18 +189,18 @@ find bearer token; get tweets relating to topic;
 perform calculations on text data and send raw tweets to MongoDB database;
 and a last callback at the end.
 */
-function getTweetsWithChosenTopic(topic, word, next) {
+function getTweetsWithChosenTopic(topic, word, callback) {
   if (word === undefined) word = null;
   async.waterfall([
     function(next) {
       findBearerToken(topic, next); //Pass in no topic set to the website
       //i.e. find a bearer token without checking for a duplicate topic
     },
-    function(err, resp, body, next) {
+    function(resp, body, next) {
       var bearerToken = body["access_token"];
       getTweets(bearerToken, topic, next);
     },
-    function(err, resp, body, next) {
+    function(resp, body, next) {
       var tweetStrings = parseTweets(body);
       twitterStoreUtil.storeTweetsInData(body);
       getWordImportanceInTopic(tweetStrings, null);
@@ -212,8 +212,8 @@ function getTweetsWithChosenTopic(topic, word, next) {
     if (err) {
       console.log(err);
     }
-    if (next) {
-      next(null, result);
+    if (callback) {
+      callback(null, result);
     }
   });
 }
@@ -224,7 +224,7 @@ function getTweetsWithTrendingTopic(word, next) {
     function(next) {
       findBearerToken(null, next);
     },
-    function(err, resp, body, next) {
+    function(resp, body, next) {
       var bearerToken = body["access_token"];
       getTopics(bearerToken, next);
     },
@@ -242,7 +242,7 @@ function getTweetsWithTrendingTopic(word, next) {
         getTweets(bearerToken, randomTopic, next);
       }
     },
-    function(err, resp, body, next) {
+    function(resp, body, next) {
       var tweetStrings = parseTweets(body);
       twitterStoreUtil.storeTweetsInData(body);
       getWordImportanceInTopic(tweetStrings, null);
@@ -264,11 +264,11 @@ function getProperNounsFromTweets(next) {
     function(next) {
       findBearerToken(null, next);
     },
-    function(err, resp, body, next) {
+    function(resp, body, next) {
       var bearerToken = body["access_token"];
       getTopics(bearerToken, next);
     },
-    function(err, body, bearerToken, next) {
+    function(body, bearerToken, next) {
       var topicStrings = parseTopics(body);
       var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
       //console.log("Chose trending topic for topic grouping (US): " + randomTopic);
@@ -276,7 +276,7 @@ function getProperNounsFromTweets(next) {
       serverChooseTopic(randomTopic);
       getTweets(bearerToken, randomTopic, next);
     },
-    function(err, resp, body, next) {
+    function(resp, body, next) {
       var tweetStrings = parseTweets(body);
       var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
       //console.log(properNounTokens);

@@ -1,3 +1,5 @@
+var async = require("async");
+
 var textUtil = require("./textanalysis/textUtil.js");
 
 var Tweet = require("../../models/twitterApi/tweet");

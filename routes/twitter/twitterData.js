@@ -558,10 +558,7 @@ function queryLotsOfTweets(response) {
     if (err) {
       console.log(err);
     }
-    var tweetStrings = [];
-    for (var tweet of sampleTweets) {
-      tweetStrings.push(tweet["text"]);
-    }
+    var tweetStrings = sampleTweets.map(function(tweet) {return tweet["text"];});
     var wordCounts = twitterAnalysis.getWordCountFromTweets(tweetStrings, 4); //Get the word count of all words
     response.render('tweetWordCount', {wordCounts: JSON.stringify(wordCounts)});
   });
