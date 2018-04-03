@@ -75,6 +75,9 @@ var self = module.exports = {
             next(null, tweet._id);
           }
         });
+
+        tweetData["text"] = textUtil.removeRetweet(status["text"]);
+        UniqueTweet.create(tweetData, function(err, tweet) {});
       }
       else {
         next(null, result._id);
