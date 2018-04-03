@@ -92,6 +92,9 @@ function getUserTimeline(bearerToken, screenName, next) {
     },
     json: true
   }, function(err, jsonResponse, body) {
+    if (jsonResponse["errors"]) {
+      console.log(jsonResponse["errors"]);
+    }
     if (next) next(null, err, jsonResponse, body);
   });
 }

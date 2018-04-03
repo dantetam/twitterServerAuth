@@ -86,7 +86,7 @@ var self = module.exports = {
   },
 
   storeUserTimelineInData: function(userTimelineJson, callback) {
-    if (userTimelineJson.length === 0) {
+    if (userTimelineJson == null || userTimelineJson.length === 0) {
       callback(null, null);
       return;
     }
