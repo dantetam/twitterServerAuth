@@ -130,20 +130,28 @@ Use the application-only OAuth token to find popular Twitter topics
 function getTopics(bearerToken, next) {
   if (siteData.TOPIC_SEARCH_API_CACHE && siteData.TOPIC_SEARCH_API_CACHE.length > 0) {
     if (next) next(null, siteData.TOPIC_SEARCH_API_CACHE, bearerToken);
+    siteData.TOPIC_FRAME_NUM++;
+    if (siteData.TOPIC_FRAME_NUM === siteData.TOPIC_FRAME_GET_NEW) {
+      siteData.TOPIC_FRAME_NUM = 0;
+      siteData.TOPIC_SEARCH_API_CACHE = null;
+    }
+    console.log(siteData.TOPIC_FRAME_NUM);
   }
-
-  var url = 'https://api.twitter.com/1.1/trends/place.json?id=23424977';
-  request({
-    url: url,
-    method: 'GET',
-    headers: {
-      "Authorization": "Bearer " + bearerToken,
-      "Content-Type": "application/json"
-    },
-    json: true
-  }, function(err, jsonResponse, body) {
-    if (next) next(err, body, bearerToken);
-  });
+  else {
+    var url = 'https://api.twitter.com/1.1/trends/place.json?id=23424977';
+    request({
+      url: url,
+      method: 'GET',
+      headers: {
+        "Authorization": "Bearer " + bearerToken,
+        "Content-Type": "application/json"
+      },
+      json: true
+    }, function(err, jsonResponse, body) {
+      siteData.TOPIC_SEARCH_API_CACHE = body;
+      if (next) next(err, body, bearerToken);
+    });
+  }
 }
 
 /**
@@ -232,7 +240,7 @@ function getTweetsWithTrendingTopic(word, next) {
       var topicStrings = parseTopics(body);
       //No topics found. Just exit with an error.
       if (topicStrings === null || topicStrings === undefined || topicStrings.length === 0) {
-        next(new Error("No topics found from parseTopics(...)."), {});
+        next(new Error("No topics found from parseTopics(...)."), null);
       }
       else {
         var randomTopic = topicStrings[Math.floor(topicStrings.length * Math.random())];
@@ -402,6 +410,7 @@ router.get('/user/:screenName', function(req, res, next) {
 router.get('/tweetAndUserLookup', function(req, res, next) {
   Repeat(function() {
     getTweetsWithTrendingTopic(null, function(err, result) {
+      if (result === null || result["statuses"] === null) return;
       //Get a random user from one tweet and look that user up
       var randomIndex = Math.floor(Math.random() * result["statuses"].length);
       var randomUserScreenName = result["statuses"][randomIndex]["user"]["screen_name"];
