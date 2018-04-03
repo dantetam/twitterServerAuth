@@ -1,9 +1,34 @@
 /*
 Server side unsupervised classification/clustering algorithm for tweets.
 
+The intention of this code is to develop automatic and beautiful clusterings of tweets.
+We accomplish this clustering through the use of approximation clustering algorithms
+(which may find local minima in terms of cluster 'fit'),
+and smart distance heuristics as well as vectorizations.
+
+One of the greatest insights is that the distance function used, defines the way in which
+data tends to cluster, as well as the relationships between groups of data, and what comprises
+those groups of data.
+
+See approxCluster(...); for the approximated, more efficient clustering algorithm.
+Basic vector similiarity functions are used as a proof of concept.
+More sophisticated measures, such as latent vector representation,
+are done offline.
+
 PROPOSED: run an analysis on queried tweets and forms clusters through k-means,
 testing the best _k_ (number of clusters) based on the Schwarz criterion.
-The Schwarz criterion, briefly, is a generalized measure of the "fit" of a predicted
+The Schwarz criterion (or Bayesian information criterion, BIC), briefly,
+is a generalized measure of the "fit" of an inferred model. In the case of k-means,
+an algorithm using the Schwarz criterion would try to minimize these two measurements:
+
+minarg_C [W(C) + lambda * m * k * log R]
+where C is some valid clustering/partition;
+
+W(C), within-class scatter, i.e. the standard deviation of every cluster; and
+lambda * m * k * log R, the number of free parameters, or model complexity.
+
+For a source and detailed explanation, see
+https://datascience.stackexchange.com/questions/9177/how-is-the-schwarz-criterion-defined/9218
 */
 
 var readline = require('readline');

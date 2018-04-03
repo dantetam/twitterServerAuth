@@ -32,7 +32,7 @@ function connectToTweetData(next) {
   });
 }
 
-
+//Async lookup all tweets in the database that belong to a certain user.
 function queryUserTweets(screenName, callback) {
   async.waterfall([
     function(next) {
@@ -59,18 +59,23 @@ function queryUserTweets(screenName, callback) {
 
 
 //Lookup tweets from the database using the local mongoDB ids ("_id"), not the Twitter internal ids.
+//This allows one to find a set of tweets from a set of mongoDB ids,
+//such as those obtained by looking up certain Tweet/TwitterUser schema.
 function queryTweetsFromIdList(tweetDataIdList, next) {
   var mongooseObjectIds = tweetDataIdList.map(function(idString) {
     return mongoose.Types.ObjectId(idString);
   });
   Tweet.find({
-    '_id': { $in: mongooseObjectIds}
+    '_id': {$in: mongooseObjectIds}
   }, function(err, tweets) {
     next(err, tweets)
   });
 }
 
 
+/**
+An async callback to query a large amount of tweets for use wherever.
+*/
 function queryLargeCorpusTweets(callback) {
   var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
 
@@ -103,6 +108,10 @@ function queryLargeCorpusTweets(callback) {
 }
 
 
+/**
+Async callback to query a large number of tweets, parse them for proper nouns,
+and then compile the proper nouns into a large array.
+*/
 function findLargeSetProperNouns(callback) {
   async.waterfall([
     function(next) {
@@ -119,7 +128,11 @@ function findLargeSetProperNouns(callback) {
   });
 }
 
-
+/**
+An async callback to find a user's total tweet sentiment,
+i.e. find a user's attitude towards many topics using the averaged sentiment vectors found in individual tweets,
+see findTweetSentimentOnTopics(...);
+*/
 function findUserSentimentOnTopics(screen_name, topicsList, callback) {
   async.waterfall([
     function(next) {
@@ -136,6 +149,11 @@ function findUserSentimentOnTopics(screen_name, topicsList, callback) {
   });
 }
 
+
+/**
+An async callback to find sentiment towards certain topics within the same tweet,
+using the VADER sentiment lookups and composition.
+*/
 function findTweetSentimentOnTopics(doubleArrTokens, properNounTokens, topicsList, next) {
   var topicsObj = {};
   var sentimentVecRes = [];
@@ -169,6 +187,10 @@ function findTweetSentimentOnTopics(doubleArrTokens, properNounTokens, topicsLis
   }
 }
 
+
+/**
+An async callback to find the sentiment vector of a user (i.e. differing opinions on various topics within tweets),
+*/
 function queryUserTopicsVector(screenName, callback) {
   async.waterfall([
     function(next) {
@@ -185,6 +207,10 @@ function queryUserTopicsVector(screenName, callback) {
 }
 
 
+/**
+An async callback to find the sentiment vectors of two users (i.e. their differing opinions on various topics within their tweets),
+and compute a modified cosine similiarity, and send the result forward.
+*/
 function compareUsersTopicVectors(screenNameA, screenNameB, callback) {
   async.waterfall([
     function(next) {
@@ -207,6 +233,9 @@ function compareUsersTopicVectors(screenNameA, screenNameB, callback) {
 }
 
 
+/**
+Query lots of tweets (according to the query parameters) and find their sentiment levels.
+*/
 function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
   var query = {};
   var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
@@ -420,7 +449,10 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
   });
 }
 
-
+/**
+Query lots of tweets (according to query) and process them for bigram counts,
+i.e. bigrams indexed by first term (see twitterAnalysis.bigramCounter).
+*/
 function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) {
   var query = {};
   var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};

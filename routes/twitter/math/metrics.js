@@ -1,3 +1,7 @@
+/**
+Mathematical metric functions for use in comparison, clustering, and other more mathematically based algorithms.
+*/
+
 var self = module.exports = {
   //Compute the overlap similiarity score of two possibly unequal length vectors
   overlapScore: function(vecA, vecB) {

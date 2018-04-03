@@ -1,3 +1,8 @@
+/**
+Methods for the Twitter endpoint/routing middleware that deal specifically with mongoDB interfacing and storage,
+i.e. creating or retrieving tweets, and using the Tweet/TwitterUser schema.
+*/
+
 var async = require("async");
 
 var textUtil = require("./textanalysis/textUtil.js");

@@ -1,3 +1,8 @@
+/**
+Natural language processing methods with algorithms to parse higher level sentences and text,
+and extract word tokens, content words, and proper nouns from raw tweets, and more.
+*/
+
 var textUtil = require("./textanalysis/textUtil.js");
 var stemmer = require('./textanalysis/stemmer.js');
 var natural = require('natural');

@@ -1,3 +1,8 @@
+/**
+Utility methods for processing text at the word/character level.
+See ../twitterAnalysis.js for methods which process higher level sentences and text.
+*/
+
 var self = {
 
   /**
