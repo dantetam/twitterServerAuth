@@ -87,7 +87,7 @@ function queryLargeCorpusTweets(callback) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      Tweet.aggregate(
+      UniqueTweet.aggregate(
         [
           {$match: {}},
           {$project: {_id: 1, text: 1}},
@@ -257,7 +257,7 @@ function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
       //console.log(query);
-      Tweet.aggregate(
+      UniqueTweet.aggregate(
           [
               {$match: query},
               {$project: {_id: 1, text: 1}},
@@ -312,7 +312,7 @@ function queryTweetsTopicGrouping(beginDate, endDate, response) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      Tweet.find().distinct('text', query, function(err, tweetsTextArr) { //Instead of returning the full tweet objects,
+      UniqueTweet.find().distinct('text', query, function(err, tweetsTextArr) { //Instead of returning the full tweet objects,
         //the callback result 'tweetsTextArr' is an array of strings (tweets).
         if (err) throw err;
         next(null, tweetsTextArr);
@@ -358,7 +358,7 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      Tweet.aggregate(
+      UniqueTweet.aggregate(
           [
               {$match: query},
               {$project: {_id: 1, text: 1}},
@@ -411,7 +411,7 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      Tweet.aggregate(
+      UniqueTweet.aggregate(
           [
               {$match: query},
               {$project: {_id: 1, text: 1}},
@@ -472,7 +472,7 @@ function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) 
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      Tweet.aggregate(
+      UniqueTweet.aggregate(
           [
               {$match: query},
               {$project: {_id: 1, text: 1}},
@@ -550,7 +550,7 @@ function queryData(query, response, outputMode) {
       });
     },
     function(sampleTweets, queryCount, next) {
-      Tweet.count({}, function (err, totalCount) {
+      UniqueTweet.count({}, function (err, totalCount) {
         next(err, sampleTweets, queryCount, totalCount);
       });
     }
@@ -559,6 +559,8 @@ function queryData(query, response, outputMode) {
       console.log(err);
     }
     if (outputMode === "text") {
+      response.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
+
       var tweetsNumShown = Math.min(queryCount, DEFAULT_QUERY_LIMIT);
       response.write("Total Tweets Found: " + queryCount + " out of " + totalCount + " (" + tweetsNumShown + " shown) \n \n \n");
       response.write(JSON.stringify(sampleTweets));
@@ -648,6 +650,7 @@ router.get('/user/:screenName', function(req, res, next) {
       //send them through the RESTful response.
       var resWriteCallback = function(err, sentimentData) {
         if (outputMode === "text") {
+          response.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
           res.write("Tweets queried from the user: " + screenName + "\n\n");
           res.write(util.JSON_stringify(topicFocuses) + "\n\n");
 
@@ -767,9 +770,7 @@ i.e. /twitterData/United_States
 router.get('/:topic', function(req, res, next) {
   var userTopic = req.params["topic"];
   userTopic = userTopic.replace(/\W+/g, " ");
-
   var jsonMode = req.query.output;
-
   queryDataSearchParam(userTopic, null, null, res, jsonMode);
   //res.send("Twitter data test query custom: " + userTopic);
 });
@@ -779,7 +780,8 @@ Handle no topic given in the URL params
 i.e. /twitterData
 */
 router.get('/', function(req, res, next) {
-  queryDataSearchParam("Trump", null, null, res, "json");
+  var jsonMode = req.query["output"];
+  queryDataSearchParam("", null, null, res, jsonMode);
   //res.send("Twitter data test query");
 });
 
