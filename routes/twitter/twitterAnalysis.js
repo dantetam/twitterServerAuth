@@ -59,8 +59,8 @@ var self = module.exports = {
         tokens.splice(i, 1);
         continue;
       }
-      tokens[i] = tokens[i].replace(/[^a-z0-9]/g, "");
-      tokens[i] = tokens[i].replace(/[ ]/g, "");
+      tokens[i] = tokens[i].replace(/[^a-z0-9]/g, " ");
+      //tokens[i] = tokens[i].replace(/[ ]/g, "");
       tokens[i] = tokens[i].replace(/\r?\n|\r/g, " ");
       if (tokens[i].length === 0 || stopWordsDict[tokens[i]]) { //Transform the token to letters and again check to see if it is not a stop word
         tokens.splice(i, 1);

@@ -341,6 +341,7 @@ router.get("/topicgroups", function(req, res, next) {
   getProperNounsFromTweets(function(err, tweetsTextArr, clusters) {
     var result = twitterAnalysis.stringifyClustersTweets(tweetsTextArr, clusters);
     if (outputMode === "text") {
+      res.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
       res.write("The server chose a topic to test topic associations.");
       res.end(JSON.stringify(result));
     }

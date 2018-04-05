@@ -378,6 +378,7 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
     }
   ], function(err, clusters) {
     var shannonIndex = metrics.modifiedShannonIndex(clusters);
+    response.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
     response.write("Modified Shannon Index (Diversity Index): " + shannonIndex + "\n \n \n");
     var tweetClusters = twitterAnalysis.stringifyClustersTweets(collectedSampleTweets, clusters);
     response.end(JSON.stringify(tweetClusters));
@@ -626,6 +627,7 @@ router.get('/userSentiment/:screenNameA/:screenNameB', function(req, res, next) 
   var screenNameA = req.params["screenNameA"];
   var screenNameB = req.params["screenNameB"];
   compareUsersTopicVectors(screenNameA, screenNameB, function(err, sentimentVecUserA, sentimentVecUserB, similiarity) {
+    res.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
     res.write("Query for User Sentiment, between users '" + screenNameA + "' and '" + screenNameB + "':\n");
     res.write("Twitter User Sentiment Vector Similiarity: " + similiarity + "\n\n");
     res.write(JSON.stringify(sentimentVecUserA) + "\n\n");
@@ -650,7 +652,7 @@ router.get('/user/:screenName', function(req, res, next) {
       //send them through the RESTful response.
       var resWriteCallback = function(err, sentimentData) {
         if (outputMode === "text") {
-          response.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
+          res.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
           res.write("Tweets queried from the user: " + screenName + "\n\n");
           res.write(util.JSON_stringify(topicFocuses) + "\n\n");
 
