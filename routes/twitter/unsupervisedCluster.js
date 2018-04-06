@@ -609,11 +609,11 @@ var self = {
   @return The connected components as a two dimensional array of proper nouns
 
   Notes: Use 0.35, 5 for normal matching;
-  0.25, 3 for looser association;
+  0.20 - 0.25, 3 for looser association;
   and 0.4, 9 for conservative matching.
   */
 
-  groupAssociatedTerms: function(properNounSet, topicAssoc, wordCountDict, proportionLinkMin = 0.25, minCountCutoff = 3) {
+  groupAssociatedTerms: function(properNounSet, topicAssoc, wordCountDict, proportionLinkMin = 0.20, minCountCutoff = 3) {
     var edges = {}; //List of all topics that can be linked together, undirected edges
     for (let token of properNounSet) {
       edges[token] = [];
@@ -631,7 +631,6 @@ var self = {
         }
       }
     }
-
     //Convert the list of edges into connected components through depth first search
     return self.dfsFindConnectedComponents(properNounSet, edges);
   },
@@ -645,7 +644,7 @@ var self = {
   dfsFindConnectedComponents: function(vertices, edges) {
     var components = [];
     var visited = {};
-    var counter = -1;
+    var counter = -1; //Current index of _components_ array to consider
 
     var dfs = function(u) {
       var neighbors = edges[u];
@@ -669,7 +668,6 @@ var self = {
 
     //Sort components by total vertex length in descending order
     components.sort(function(a, b) {return b.length - a.length;});
-
     return components;
   }
 

@@ -24,7 +24,13 @@ router.initConnectToSocket = function(socket, io) {
     socket.emit('/twitter/', {
       "tweets": tweets
     });
-  }
+  };
+  router.sendTweetsAndUserSocketMsg = function(tweets, userString) {
+    socket.emit('/twitter/', {
+      "tweets": tweets,
+      "userString": userString
+    });
+  };
 }
 
 
@@ -184,11 +190,8 @@ function getUserTimelineTweets(screenName, callback) {
       twitterStoreUtil.storeUserTimelineInData(body, next);
     }
   ], function(err, result) {
-    if (err && callback) {
+    if (callback) {
       callback(err, result);
-    }
-    else if (callback) {
-      callback(null, result);
     }
   });
 }
@@ -412,16 +415,30 @@ router.get('/user/:screenName', function(req, res, next) {
 
 
 router.get('/tweetAndUserLookup', function(req, res, next) {
+  var tweetsCallback = function(err, retrievedTweets, userDisplayString) { //Callback to call every update to render to the client
+    if (router.sendTweetsAndUserSocketMsg !== undefined) {
+      router.sendTweetsAndUserSocketMsg(retrievedTweets, userDisplayString);
+    }
+  }
+
   Repeat(function() {
-    getTweetsWithTrendingTopic(null, function(err, result) {
-      if (result === null || result["statuses"] === null) return;
+    getTweetsWithTrendingTopic(null, function(err, retrievedTweets) {
+      if (retrievedTweets === null || retrievedTweets["statuses"] === null) return;
       //Get a random user from one tweet and look that user up
-      var randomIndex = Math.floor(Math.random() * result["statuses"].length);
-      var randomUserScreenName = result["statuses"][randomIndex]["user"]["screen_name"];
-      getUserTimelineTweets(randomUserScreenName, function(err, result) {});
+      var randomIndex = Math.floor(Math.random() * retrievedTweets["statuses"].length);
+      var randomUserScreenName = retrievedTweets["statuses"][randomIndex]["user"]["screen_name"];
+
+      getUserTimelineTweets(randomUserScreenName, function(err, twitterUser) {
+        var userDisplayString = "Storing timeline from user: "
+          + twitterUser["screenName"] + " (" + twitterUser["authorPrettyName"] + ")\n";
+        tweetsCallback(err, retrievedTweets, userDisplayString);
+      });
     });
   }).every(process.env.SERVER_MS_DELAY, 'ms').start.now();
-  res.send("The server is processing both a stream of tweets and storing a random author from the sample.");
+
+  //res.send("The server is processing both a stream of tweets and storing a random author from the sample.");
+
+  res.render('twitterEndpoint', {port: process.env.PORT || 3000});
 });
 
 

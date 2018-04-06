@@ -5,7 +5,8 @@ block content
     This is the endpoint for the Twitter server, which connects to the RESTful Twitter Search API, 
     as well as the socket.io connection on this server, to deliver live tweet updates to this webpage.
   br
-  p The server is processing a chosen topic.
+  br
+  //p The server is processing a chosen topic.
   div(id="tweets")
   br
   br
@@ -25,7 +26,11 @@ block content
     var socket = io.connect(url, {reconnect: true});
     socket.on("/twitter/", function(data) {
       console.log(data);
-      var tweetHtml = "Updated last at " + (new Date()).toString() + "<br>";
+      var tweetHtml = "Updated last at " + (new Date()).toString() + "<br><br>";
+      if (data.userString !== undefined) {
+        tweetHtml += data.userString + "<br><br>";
+      }
+      
       for (var i = 0; i < data.tweets.statuses.length; i++) {
         tweetHtml += prettyTextTweet(data.tweets.statuses[i]) + "<br>";
       }
