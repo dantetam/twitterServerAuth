@@ -554,6 +554,10 @@ var self = {
   return a dictionary of the most common associations,
   indexed by word i.e.
   ["a", "b", "c"]
+
+  Note that since sentences are limited to a certain number of proper noun tokens, say _s_,
+  the actual runtime of this method is ns^2 + n(s log s) = O(ns^2),
+  where n is the number of sentences.
   */
   findAssocFromProperNouns: function(properNounTokens) {
     var results = {};
@@ -600,6 +604,7 @@ var self = {
   @param wordCountDict A dictionary of word counts indexed by word
   @param proportionLinkMin The minimum proportion from [0,1] at which a Bayesian (count(A,B) / count(A))
     MLE determines a possible match between A and B
+    Note for now: add 1 to count(A,B) if and only if A and B appear in the same tweet.
   @param minCountCutoff The minimum count(A,B) which fires a match between A and B
   @return The connected components as a two dimensional array of proper nouns
 
@@ -632,6 +637,7 @@ var self = {
   },
 
   /**
+  A DFS traversal to isolate connected components in an undirected, and often not connected graph.
   @param vertices A list of vertice names
   @param edges A dictionary of edges indexed by vertex names
   @return The connected components as a two dimensional array of vertex names
@@ -661,6 +667,7 @@ var self = {
       }
     }
 
+    //Sort components by total vertex length in descending order
     components.sort(function(a, b) {return b.length - a.length;});
 
     return components;

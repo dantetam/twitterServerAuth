@@ -78,20 +78,17 @@ An async callback to query a large amount of tweets for use wherever.
 */
 function queryLargeCorpusTweets(callback) {
   var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
-
-  var properNounTokens = null;
-
   async.waterfall([
     function(next) {
       connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
+      //var query = {"text": {$in : [/obama/, /clinton/]}};
+      var query = {};
       UniqueTweet.aggregate(
         [
-          {$match: {}},
+          {$match: query},
           {$project: {_id: 1, text: 1}},
-          //{"$limit": SMALL_QUERY_LIMIT}
           {$sample: {size: LARGE_QUERY_LIMIT}}
         ],
         function(err, sampleTweets) {
@@ -141,11 +138,56 @@ function findTopicAssociations(callback) {
       var topicAssoc = cluster.findAssocFromProperNouns(properNounTokens);
       var wordCountDict = twitterAnalysis.wordCountDict(properNounTokens, 0);
       var groupedTerms = cluster.groupAssociatedTerms(properNounSet, topicAssoc, wordCountDict);
-      next(null, topicAssoc, groupedTerms);
+      next(null, topicAssoc, wordCountDict, groupedTerms);
     }
-  ], function(err, topicAssoc, groupedTerms) {
+  ], function(err, topicAssoc, wordCountDict, groupedTerms) {
     if (err) throw err;
-    if (callback) callback(err, topicAssoc, groupedTerms);
+    if (callback) callback(err, topicAssoc, wordCountDict, groupedTerms);
+  });
+}
+
+
+function advancedSearch(originalSearch, callback) {
+  async.waterfall([
+    function(next) {
+      findTopicAssociations(next);
+    },
+    function(topicAssoc, wordCountDict, groupedTerms, next) { //Find a not random subsampling of tweets to show
+      var allSearchTerms = [originalSearch];
+      for (var group of groupedTerms) {
+        var searchTermIndex = group.indexOf(originalSearch);
+        if (searchTermIndex !== -1) {
+          for (var i = 0; i < group.length; i++) {
+            if (searchTermIndex === i) continue;
+            allSearchTerms.push(group[i]);
+          }
+        }
+      }
+
+      var regexArray = [];
+      for (var searchTerm of allSearchTerms) {
+        regexArray.push(new RegExp(searchTerm, "i"));
+      }
+
+      var query = {"text": {$in : regexArray}};
+      var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
+
+      UniqueTweet.aggregate(
+        [
+          {$match: query},
+          {$project: {_id: 1, text: 1}},
+          {$sample: {size: LARGE_QUERY_LIMIT}}
+        ],
+        function(err, sampleTweets) {
+          if (err) throw err;
+          var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+          next(null, tweetStrings);
+        }
+      );
+    }
+  ], function(err, result) {
+    if (err) throw err;
+    if (callback) callback(err, result);
   });
 }
 
@@ -735,16 +777,25 @@ router.get('/corpusTopics', function(req, res, next) {
 
 router.get('/topicAssociations', function(req, res, next) {
   var jsonMode = req.query.output;
-  findTopicAssociations(function(err, topicAssoc, groupedTerms) {
+  findTopicAssociations(function(err, topicAssoc, wordCountDict, groupedTerms) {
+    if (err) throw err;
     if (jsonMode === "text") {
       res.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
-      res.write(JSON.stringify(topicAssoc) + "\n \n");
       res.write(JSON.stringify(groupedTerms) + "\n \n");
+      res.write(JSON.stringify(topicAssoc) + "\n \n");
+      res.write(JSON.stringify(wordCountDict) + "\n \n");
       res.end();
     }
     else {
-      res.send({topicAssoc: topicAssoc, groupedTerms: groupedTerms});
+      res.send({groupedTerms: groupedTerms, topicAssoc: topicAssoc, wordCountDict: wordCountDict});
     }
+  });
+});
+
+router.get('/advSearch/:topic', function(req, res, next) {
+  var userTopic = req.params["topic"];
+  advancedSearch(userTopic, function(err, result) {
+    res.send(result);
   });
 });
 
