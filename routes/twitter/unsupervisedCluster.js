@@ -601,11 +601,13 @@ var self = {
   @return The connected components as a two dimensional array of proper nouns
   */
   groupAssociatedTerms: function(properNounSet, topicAssoc, wordCountDict, proportionLinkMin = 0.35) {
+    console.log(topicAssoc);
     var edges = {}; //List of all topics that can be linked together, undirected edges
     for (let token of properNounSet) {
       edges[token] = [];
       var associatedTokens = topicAssoc[token];
       var totalCount = wordCountDict[token];
+      if (associatedTokens === undefined) continue; //No word matches found
       for (let entry of associatedTokens) {
         var otherToken = entry[0], count = entry[1];
         if (count / totalCount >= proportionLinkMin) {
@@ -646,11 +648,13 @@ var self = {
     for (let u of vertices) {
       if (visited[u] === undefined) {
         visited[u] = true;
-        components.push([]);
+        components.push([u]); //Start off a new component with the current element
         counter++;
         dfs(u); //This DFS call will go through this connected component
       }
     }
+
+    components.sort(function(a, b) {return b.length - a.length;});
 
     return components;
   }

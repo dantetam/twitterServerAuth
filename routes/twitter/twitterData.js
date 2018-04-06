@@ -140,12 +140,12 @@ function findTopicAssociations(callback) {
     function(properNounTokens, properNounSet, next) { //Find a not random subsampling of tweets to show
       var topicAssoc = cluster.findAssocFromProperNouns(properNounTokens);
       var wordCountDict = twitterAnalysis.wordCountDict(properNounTokens, 0);
-      var groupedTerms = cluster.groupAssociatedTerms(properNounSet, topicAssoc, wordCount);
+      var groupedTerms = cluster.groupAssociatedTerms(properNounSet, topicAssoc, wordCountDict);
       next(null, topicAssoc, groupedTerms);
     }
-  ], function(err, topicAssoc) {
+  ], function(err, topicAssoc, groupedTerms) {
     if (err) throw err;
-    if (callback) callback(err, topicAssoc);
+    if (callback) callback(err, topicAssoc, groupedTerms);
   });
 }
 
@@ -729,6 +729,21 @@ router.get('/corpusTopics', function(req, res, next) {
     }
     else {
       res.send({properNounTokens: properNounTokens, properNounSet: properNounSet});
+    }
+  });
+});
+
+router.get('/topicAssociations', function(req, res, next) {
+  var jsonMode = req.query.output;
+  findTopicAssociations(function(err, topicAssoc, groupedTerms) {
+    if (jsonMode === "text") {
+      res.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
+      res.write(JSON.stringify(topicAssoc) + "\n \n");
+      res.write(JSON.stringify(groupedTerms) + "\n \n");
+      res.end();
+    }
+    else {
+      res.send({topicAssoc: topicAssoc, groupedTerms: groupedTerms});
     }
   });
 });

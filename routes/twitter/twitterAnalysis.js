@@ -203,7 +203,7 @@ var self = module.exports = {
       }
     }
     return results;
-  }
+  },
 
   /*
   Takes in an array of an array of tokens, and returns a sorted list of 'dictionary' entries indexed by [word, count]
