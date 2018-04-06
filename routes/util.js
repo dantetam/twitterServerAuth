@@ -2,6 +2,7 @@ var self = module.exports = {
 
   //This function is used as a utility to properly render unicode text within an endpoint's text response.
   //Sourced from https://twittercommunity.com/t/getting-strange-characters-in-full-text-from-rest-api/84423/4
+  /*
   JSON_stringify: function(s, emit_unicode = false) {
     var json = JSON.stringify(s);
     return emit_unicode ? json : json.replace(/[\u007f-\uffff]/g,
@@ -10,12 +11,13 @@ var self = module.exports = {
       }
     );
   },
+  */
 
   /**
   Utility method to convert a dictionary of keys and counts, into a sorted list in descending order,
   with counts below _cutoffCount_ removed.
-  i.e. {a: 5, b: 2, c: 3} -> [[a, 5], [c, 3], [b, 2]]
-  cutoffCountInc = 3, {a: 5, b: 2, c: 3} -> [[a, 5], [c, 3]]
+  i.e. {a: 5, b: 2, c: 3} -> [["a", 5], ["c", 3], ["b", 2]]
+  cutoffCountInc = 3, {a: 5, b: 2, c: 3} -> [["a", 5], ["c", 3]]
   */
   sortDictIntoList: function(dictionary, cutoffCount = 5) {
     var listSortedResults = [];

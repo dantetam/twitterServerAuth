@@ -36,6 +36,7 @@ var fs = require('fs');
 var async = require("async");
 
 var metrics = require("./math/metrics");
+var util = require("../util.js");
 
 var word2vecDir = "./word2vec/";
 var vaderSentimentFile = "./vaderSentiment/vader_lexicon.txt";
@@ -546,6 +547,112 @@ var self = {
       }
     }
     return result;
+  },
+
+  /**
+  Given a two dimensional array _properNounTokens_,
+  return a dictionary of the most common associations,
+  indexed by word i.e.
+  ["a", "b", "c"]
+  */
+  findAssocFromProperNouns: function(properNounTokens) {
+    var results = {};
+    for (let arrTokens of properNounTokens) {
+      for (var i = 0; i < arrTokens.length; i++) {
+        let firstToken = arrTokens[i];
+        for (var j = 0; j < arrTokens.length; j++) {
+          if (i === j) continue;
+          let secondToken = arrTokens[j];
+          if (results[firstToken] === undefined) {
+            results[firstToken] = {};
+          }
+          if (results[firstToken][secondToken] === undefined) {
+            results[firstToken][secondToken] = 0;
+          }
+          results[firstToken][secondToken]++;
+        }
+      }
+    }
+    //Below, we convert every object within the results into a sorted array.
+    /*
+    i.e.
+    {"a":
+      {
+      "b": 5, //implies the pair "a" & "b" is seen five times together
+      "c": 4
+      },
+     "b": {...}
+    }
+    ->
+    {"a": [["b", 5], ["c", 4]], "b": [...]}
+    */
+    var sortedWithinKeyResults = {};
+    for (let token in results) {
+      sortedWithinKeyResults[token] = util.sortDictIntoList(results[token]);
+    }
+    return sortedWithinKeyResults;
+  },
+
+  /**
+  @param properNounSet A list of proper nouns, with no repeats
+  @param topicAssoc A dictionary indexed by words, and values are like the output of
+    self.findAssocFromProperNouns() i.e. "a": [["b", 5], ["c", 4]]
+  @param wordCountDict A dictionary of word counts indexed by word
+  @return The connected components as a two dimensional array of proper nouns
+  */
+  groupAssociatedTerms: function(properNounSet, topicAssoc, wordCountDict, proportionLinkMin = 0.35) {
+    var edges = {}; //List of all topics that can be linked together, undirected edges
+    for (let token of properNounSet) {
+      edges[token] = [];
+      var associatedTokens = topicAssoc[token];
+      var totalCount = wordCountDict[token];
+      for (let entry of associatedTokens) {
+        var otherToken = entry[0], count = entry[1];
+        if (count / totalCount >= proportionLinkMin) {
+          edges[token].push(otherToken);
+        }
+        else { //Counts are sorted, so if this element is lower than the minimum proportion,
+          //the other elements to the right are smaller and are also not qualified.
+          break;
+        }
+      }
+    }
+
+    //Convert the list of edges into connected components through depth first search
+    return self.dfsFindConnectedComponents(properNounSet, edges);
+  },
+
+  /**
+  @param vertices A list of vertice names
+  @param edges A dictionary of edges indexed by vertex names
+  @return The connected components as a two dimensional array of vertex names
+  */
+  dfsFindConnectedComponents: function(vertices, edges) {
+    var components = [];
+    var visited = {};
+    var counter = -1;
+
+    var dfs = function(u) {
+      var neighbors = edges[u];
+      for (let v of neighbors) {
+        if (visited[v] === undefined) {
+          visited[v] = true;
+          components[counter].push(v); //While still on the current component, continue adding to it
+          dfs(v);
+        }
+      }
+    };
+
+    for (let u of vertices) {
+      if (visited[u] === undefined) {
+        visited[u] = true;
+        components.push([]);
+        counter++;
+        dfs(u); //This DFS call will go through this connected component
+      }
+    }
+
+    return components;
   }
 
 };

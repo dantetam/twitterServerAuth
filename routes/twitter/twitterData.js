@@ -120,13 +120,35 @@ function findLargeSetProperNouns(callback) {
     function(tweetStrings, next) { //Find a not random subsampling of tweets to show
       var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
       var properNounSet = twitterAnalysis.findUnionDoubleArrTokens(properNounTokens);
-      next(null, properNounSet);
+      next(null, properNounTokens, properNounSet);
     }
-  ], function(err, results) {
+  ], function(err, properNounTokens, properNounSet) {
     if (err) throw err;
-    callback(err, results);
+    if (callback) callback(err, properNounTokens, properNounSet);
   });
 }
+
+
+/**
+
+*/
+function findTopicAssociations(callback) {
+  async.waterfall([
+    function(next) {
+      findLargeSetProperNouns(next);
+    },
+    function(properNounTokens, properNounSet, next) { //Find a not random subsampling of tweets to show
+      var topicAssoc = cluster.findAssocFromProperNouns(properNounTokens);
+      var wordCountDict = twitterAnalysis.wordCountDict(properNounTokens, 0);
+      var groupedTerms = cluster.groupAssociatedTerms(properNounSet, topicAssoc, wordCount);
+      next(null, topicAssoc, groupedTerms);
+    }
+  ], function(err, topicAssoc) {
+    if (err) throw err;
+    if (callback) callback(err, topicAssoc);
+  });
+}
+
 
 /**
 An async callback to find a user's total tweet sentiment,
@@ -196,8 +218,8 @@ function queryUserTopicsVector(screenName, callback) {
     function(next) {
       findLargeSetProperNouns(next);
     },
-    function(topicsList, next) {
-      findUserSentimentOnTopics(screenName, topicsList, next);
+    function(properNounTokens, properNounSet, next) {
+      findUserSentimentOnTopics(screenName, properNounSet, next);
     }
   ], function(err, sentimentObj) {
     if (callback) {
@@ -697,7 +719,18 @@ router.get('/corpus', function(req, res, next) {
 });
 
 router.get('/corpusTopics', function(req, res, next) {
-  findLargeSetProperNouns(function(err, results) {res.send(results);});
+  var jsonMode = req.query.output;
+  findLargeSetProperNouns(function(err, properNounTokens, properNounSet) {
+    if (jsonMode === "text") {
+      res.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
+      res.write(JSON.stringify(properNounSet) + "\n \n");
+      res.write(JSON.stringify(properNounTokens) + "\n \n");
+      res.end();
+    }
+    else {
+      res.send({properNounTokens: properNounTokens, properNounSet: properNounSet});
+    }
+  });
 });
 
 router.get('/wordmap', function(req, res, next) {

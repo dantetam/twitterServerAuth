@@ -59,9 +59,10 @@ var self = module.exports = {
         tokens.splice(i, 1);
         continue;
       }
-      tokens[i] = tokens[i].replace(/[^a-z0-9]/g, " ");
-      //tokens[i] = tokens[i].replace(/[ ]/g, "");
+      tokens[i] = tokens[i].replace(/[^a-z0-9]/g, "");
+      tokens[i] = tokens[i].replace(/[ ]/g, "");
       tokens[i] = tokens[i].replace(/\r?\n|\r/g, " ");
+      //tokens[i] = tokens[i].trim();
       if (tokens[i].length === 0 || stopWordsDict[tokens[i]]) { //Transform the token to letters and again check to see if it is not a stop word
         tokens.splice(i, 1);
       }
@@ -180,10 +181,7 @@ var self = module.exports = {
   },
 
 
-  /*
-  Takes in an array of an array of tokens, and returns a sorted list of 'dictionary' entries indexed by [word, count]
-  */
-  wordCount: function(doubleArrTokens, cutoffCount = 5) {
+  wordCountDict: function(doubleArrTokens, cutoffCount = 5) {
     var results = {};
     for (var i = 0; i < doubleArrTokens.length; i++) {
       var listTokens = doubleArrTokens[i];
@@ -199,6 +197,19 @@ var self = module.exports = {
         results[token]++;
       }
     }
+    for (let key in results) {
+      if (results[key] < cutoffCount) {
+        delete results[key];
+      }
+    }
+    return results;
+  }
+
+  /*
+  Takes in an array of an array of tokens, and returns a sorted list of 'dictionary' entries indexed by [word, count]
+  */
+  wordCountList: function(doubleArrTokens, cutoffCount = 5) {
+    var results = self.wordCountDict(doubleArrTokens, cutoffCount)
     var listSortedResults = util.sortDictIntoList(results, cutoffCount);
     return listSortedResults;
   },
@@ -210,7 +221,7 @@ var self = module.exports = {
   */
   getWordCountFromTweets: function(tweetsArr, cutoffCountInc = 5) {
     var doubleArrTokens = self.sanitizeTweets(tweetsArr);
-    var tweetsWordCount = self.wordCount(doubleArrTokens, cutoffCountInc);
+    var tweetsWordCount = self.wordCountList(doubleArrTokens, cutoffCountInc);
     return tweetsWordCount;
   },
 
