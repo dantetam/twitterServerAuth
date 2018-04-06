@@ -22,7 +22,7 @@ var self = {
   //Sourced from https://stackoverflow.com/questions/4180363/javascript-regexp-replacing-1-with-f1
   //This converts a joined set of camelCase words into fully separated words through a regex.
   camelCaseSeparate: function(stringValue) {
-    return stringValue.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1");
+    return stringValue.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z][0-9])/g, " $1");
   },
 
   //"RT @screen_name: tweet..." -> "tweet..."

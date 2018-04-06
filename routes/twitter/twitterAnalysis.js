@@ -41,10 +41,10 @@ var self = module.exports = {
   Takes in a string tweet, which may contain bad characters/misformed words,
   and returns a lower case version, in an array of tokens.
   */
-  sanitizeTweet: function(tweet) {
+  _sanitizeTweet: function(tweet) {
     //Capture all hashtag regex patterns, which returns two groups for each full match:
     //the hashtag symbol, which is discarded; and the hashtag topic, which is divided into words since it is usually camelCase
-    var tweetSplitHashtags = tweet.replace(/(\#)([a-zA-Z]+)/g, function(match, group1, group2, index, original) {
+    var tweetSplitHashtags = tweet.replace(/(\#)([a-zA-Z0-9]+)/g, function(match, group1, group2, index, original) {
       return textUtil.camelCaseSeparate(group2);
     });
 
@@ -55,11 +55,15 @@ var self = module.exports = {
     //Go backwards since we are removing elements, arraylist trap
     for (var i = tokens.length - 1; i >= 0; i--) {
       var token = tokens[i].trim();
-      if (token.indexOf("…") !== -1 || token.indexOf("https") !== -1 || token.indexOf("@") !== -1 || token.indexOf("rt") !== -1 || stopWordsDict[token]) {
+      if (token.indexOf("…") !== -1 || token.indexOf("http") !== -1 ||
+          token.indexOf("@") !== -1 || token.indexOf("rt") !== -1 ||
+          stopWordsDict[token] ||
+          /[^a-z0-9]/.test(token)) {
         tokens.splice(i, 1);
         continue;
       }
-      tokens[i] = tokens[i].replace(/[^a-z0-9]/g, "");
+
+      tokens[i] = tokens[i].replace(/[^a-z0-9]/g, " ");
       tokens[i] = tokens[i].replace(/[ ]/g, "");
       tokens[i] = tokens[i].replace(/\r?\n|\r/g, " ");
       //tokens[i] = tokens[i].trim();
@@ -70,13 +74,28 @@ var self = module.exports = {
     return tokens;
   },
 
+  tweetIsEnglish: function(tokens, cutoffProportionMin = 0.3) {
+    if (tokens.length === 0) return true;
+    var stopWordsDict = self.getStopWords();
+    var recognizedCount = 0;
+    for (var token of tokens) {
+      if (stopWordsDict[token] || trieDictionary.findWord(token)) {
+        recognizedCount++;
+      }
+    }
+    return recognizedCount / tokens.length >= cutoffProportionMin;
+  },
+
   /*
   Takes in an array of tweets, and returns an array of an array of tokens
   */
   sanitizeTweets: function(tweetsArr) {
     var results = [];
     for (var i = 0; i < tweetsArr.length; i++) {
-      results.push(self.sanitizeTweet(tweetsArr[i]));
+      var sanitizedTokens = self._sanitizeTweet(tweetsArr[i]);
+      if (self.tweetIsEnglish(sanitizedTokens)) {
+        results.push(sanitizedTokens);
+      }
     }
     return results;
   },
@@ -104,7 +123,7 @@ var self = module.exports = {
     //Twitter users often use letter 'stretches' like 'soooo' to convey emotion, which bypass the dictionary
     //This corresponds to the third option
     return trieDictionary.findWord(lower) ||
-      lower.indexOf("https") !== -1 ||
+      lower.indexOf("http") !== -1 ||
       (!trieDictionary.findWord(lower) && textUtil.majorityLetter(lower)) ||
       textUtil.isNumber(lower);
   },

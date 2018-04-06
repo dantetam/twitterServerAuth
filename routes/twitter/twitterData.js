@@ -14,7 +14,7 @@ var util = require('../util.js');
 
 var SMALL_QUERY_LIMIT = 200;
 var DEFAULT_QUERY_LIMIT = 500;
-var LARGE_QUERY_LIMIT = 10000;
+var LARGE_QUERY_LIMIT = 100;
 
 var TWITTER_SERVER_DATA_DIR_NAME = "twitterServer";
 
@@ -117,11 +117,11 @@ function findLargeSetProperNouns(callback) {
     function(tweetStrings, next) { //Find a not random subsampling of tweets to show
       var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
       var properNounSet = twitterAnalysis.findUnionDoubleArrTokens(properNounTokens);
-      next(null, properNounTokens, properNounSet);
+      next(null, tweetStrings, properNounTokens, properNounSet);
     }
-  ], function(err, properNounTokens, properNounSet) {
+  ], function(err, tweetStrings, properNounTokens, properNounSet) {
     if (err) throw err;
-    if (callback) callback(err, properNounTokens, properNounSet);
+    if (callback) callback(err, tweetStrings, properNounTokens, properNounSet);
   });
 }
 
@@ -134,7 +134,7 @@ function findTopicAssociations(callback) {
     function(next) {
       findLargeSetProperNouns(next);
     },
-    function(properNounTokens, properNounSet, next) { //Find a not random subsampling of tweets to show
+    function(tweetStrings, properNounTokens, properNounSet, next) { //Find a not random subsampling of tweets to show
       var topicAssoc = cluster.findAssocFromProperNouns(properNounTokens);
       var wordCountDict = twitterAnalysis.wordCountDict(properNounTokens, 0);
       var groupedTerms = cluster.groupAssociatedTerms(properNounSet, topicAssoc, wordCountDict);
@@ -260,7 +260,7 @@ function queryUserTopicsVector(screenName, callback) {
     function(next) {
       findLargeSetProperNouns(next);
     },
-    function(properNounTokens, properNounSet, next) {
+    function(tweetStrings, properNounTokens, properNounSet, next) {
       findUserSentimentOnTopics(screenName, properNounSet, next);
     }
   ], function(err, sentimentObj) {
@@ -762,15 +762,20 @@ router.get('/corpus', function(req, res, next) {
 
 router.get('/corpusTopics', function(req, res, next) {
   var jsonMode = req.query.output;
-  findLargeSetProperNouns(function(err, properNounTokens, properNounSet) {
+  findLargeSetProperNouns(function(err, tweetStrings, properNounTokens, properNounSet) {
     if (jsonMode === "text") {
       res.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
+      res.write(JSON.stringify(tweetStrings) + "\n \n");
       res.write(JSON.stringify(properNounSet) + "\n \n");
       res.write(JSON.stringify(properNounTokens) + "\n \n");
       res.end();
     }
     else {
-      res.send({properNounTokens: properNounTokens, properNounSet: properNounSet});
+      res.send({
+        tweetStrings: tweetStrings,
+        properNounTokens: properNounTokens,
+        properNounSet: properNounSet
+      });
     }
   });
 });

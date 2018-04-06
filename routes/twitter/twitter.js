@@ -429,8 +429,14 @@ router.get('/tweetAndUserLookup', function(req, res, next) {
       var randomUserScreenName = retrievedTweets["statuses"][randomIndex]["user"]["screen_name"];
 
       getUserTimelineTweets(randomUserScreenName, function(err, twitterUser) {
-        var userDisplayString = "Storing timeline from user: "
-          + twitterUser["screenName"] + " (" + twitterUser["authorPrettyName"] + ")\n";
+        var userDisplayString;
+        if (twitterUser === null) {
+          userDisplayString = ""; 
+        }
+        else {
+          userDisplayString = "Storing timeline from user: "
+            + twitterUser["screenName"] + " (" + twitterUser["authorPrettyName"] + ")\n";
+        }
         tweetsCallback(err, retrievedTweets, userDisplayString);
       });
     });
