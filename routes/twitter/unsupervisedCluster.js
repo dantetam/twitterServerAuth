@@ -588,7 +588,7 @@ var self = {
     */
     var sortedWithinKeyResults = {};
     for (let token in results) {
-      sortedWithinKeyResults[token] = util.sortDictIntoList(results[token]);
+      sortedWithinKeyResults[token] = util.sortDictIntoList(results[token], 0);
     }
     return sortedWithinKeyResults;
   },
@@ -598,10 +598,17 @@ var self = {
   @param topicAssoc A dictionary indexed by words, and values are like the output of
     self.findAssocFromProperNouns() i.e. "a": [["b", 5], ["c", 4]]
   @param wordCountDict A dictionary of word counts indexed by word
+  @param proportionLinkMin The minimum proportion from [0,1] at which a Bayesian (count(A,B) / count(A))
+    MLE determines a possible match between A and B
+  @param minCountCutoff The minimum count(A,B) which fires a match between A and B
   @return The connected components as a two dimensional array of proper nouns
+
+  Notes: Use 0.35, 5 for normal matching;
+  0.25, 3 for looser association;
+  and 0.4, 9 for conservative matching.
   */
-  groupAssociatedTerms: function(properNounSet, topicAssoc, wordCountDict, proportionLinkMin = 0.35) {
-    console.log(topicAssoc);
+
+  groupAssociatedTerms: function(properNounSet, topicAssoc, wordCountDict, proportionLinkMin = 0.25, minCountCutoff = 3) {
     var edges = {}; //List of all topics that can be linked together, undirected edges
     for (let token of properNounSet) {
       edges[token] = [];
@@ -610,7 +617,7 @@ var self = {
       if (associatedTokens === undefined) continue; //No word matches found
       for (let entry of associatedTokens) {
         var otherToken = entry[0], count = entry[1];
-        if (count / totalCount >= proportionLinkMin) {
+        if (count / totalCount >= proportionLinkMin && count >= minCountCutoff) {
           edges[token].push(otherToken);
         }
         else { //Counts are sorted, so if this element is lower than the minimum proportion,
