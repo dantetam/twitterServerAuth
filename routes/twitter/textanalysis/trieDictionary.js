@@ -69,5 +69,6 @@ var self = {
 };
 
 self.readWordsFile("./routes/twitter/word-list.txt");
+//self.readWordsFile("./routes/twitter/google-10000-english-usa.txt");
 
 module.exports = self;

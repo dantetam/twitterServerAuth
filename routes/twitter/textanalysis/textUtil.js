@@ -59,6 +59,24 @@ var self = {
 
   isNumber: function(str) {
     return /^[0-9]*$/g.test(str);
+  },
+
+  /**
+  Sourced from
+  https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-into-list-of-words#answer-11642687
+  originally in Python. As per the user's answer,
+
+  "The best way to proceed is to model the distribution of the output...
+  It is reasonable to assume that [word frequencies] follow Zipf's law,
+  that is the word with rank n...has probability roughly 1/(n log N),
+  where N is the number of words in the dictionary.
+
+  Once you have fixed the model, you can use dynamic programming to infer the position of the spaces.
+  The most likely sentence is the one that maximizes the product of the probability of each individual word,
+  ...[and use log space costs] to avoid overflows."
+  */
+  separateUnspacedWords: function(str) {
+
   }
 
 }

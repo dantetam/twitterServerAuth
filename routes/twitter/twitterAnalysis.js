@@ -9,6 +9,7 @@ var natural = require('natural');
 var util = require("../util.js");
 
 var trieDictionary = require("./textanalysis/trieDictionary.js");
+var trieWordFreq = require("./textanalysis/trieWordFreq.js");
 
 var self = module.exports = {
 
