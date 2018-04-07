@@ -12,8 +12,12 @@ https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-int
 */
 
 var LOG_TOTAL_NUM_WORDS = Math.log(10000);
+
 //var MAX_WORD = 18;
-var MAX_WORD = 12;
+var MAX_WORD = 10; //Assume that tweets won't be using unnecessarily large words
+//Produce a few errors while greatly speeding up computation
+
+var INACTIVE = -1;
 
 var self = {
 
@@ -25,6 +29,7 @@ var self = {
   addWord: function(word, rank) {
     //self._maxWord = Math.max(word.length, self._maxWord);
     //console.log(self._maxWord);
+    if (word.length > MAX_WORD) return;
 
     var pointer = self._data;
     for (var i = 0; i < word.length; i++) {
@@ -47,6 +52,7 @@ var self = {
       }
       pointer = pointer[char];
     }
+    if (pointer["rank"] === undefined) return INACTIVE;
     return pointer["rank"];
   },
 
@@ -85,12 +91,34 @@ var self = {
     Return the best pair (match_cost, match_length).
     */
     var best_match = function(i) {
-      var bestMatch = [9999, -1];
       var start = Math.max(0, i-MAX_WORD);
       var end = i;
+      var bestMatch = [9999, start];
       for (var k = start; k < end; k++) {
-        //console.log(s.substring(i-k-1, i) + " " + cost[i-k-1] + " " + self.getWordProb(s.substring(i-k-1, i)))
-        if (cost[i-k-1] === undefined || self.getWordProb(s.substring(i-k-1, i)) === undefined) continue;
+        console.log(s.substring(i-k-1, i) + " " + cost[i-k-1] + " " + self.getWordProb(s.substring(i-k-1, i)))
+        if (self.getWordProb(s.substring(i-k-1, i)) === undefined) {
+          continue;
+        }
+        if (cost[i-k-1] === undefined || self.getWordProb(s.substring(i-k-1, i)) === INACTIVE) {
+          //TODO: efficiently stop computation if a word prefix is _entirely_ not found within the trie structure
+          //Note that multiple distinctions need to be made:
+          //nonexistent nodes ("darkz"), inactive nodes ("dar"), and active nodes ("dark").
+          /*
+          Note that words are processed in this order:
+
+          t 9999 -1
+          ht 9999 3.3189390950359563
+          ght 7.331025370631858 undefined
+          ight 9999 undefined
+          night 4.012086275595902 4.012086275595902
+          tnight 9999 undefined
+          htnight 9999 undefined
+          ghtnight 3.3189390950359563 undefined
+          ightnight 9999 undefined
+          nightnight 0 undefined
+          */
+          continue;
+        }
         if (cost[i-k-1] + self.getWordProb(s.substring(i-k-1, i)) < bestMatch[0] || bestMatch[1] === -1) {
           bestMatch[0] = cost[i-k-1] + self.getWordProb(s.substring(i-k-1, i));
           bestMatch[1] = k+1;
