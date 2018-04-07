@@ -1,6 +1,9 @@
 var readline = require('readline');
 var fs = require('fs');
 
+var textUtil = require("./textUtil.js");
+var stemmer = require("./stemmer.js");
+
 /**
 A custom trie data structure in JS object format for storing word frequencies. See
 ./trieDictionary.js
@@ -14,7 +17,7 @@ https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-int
 var LOG_TOTAL_NUM_WORDS = Math.log(10000);
 
 //var MAX_WORD = 18;
-var MAX_WORD = 10; //Assume that tweets won't be using unnecessarily large words
+var MAX_WORD = 12; //Assume that tweets won't be using unnecessarily large words
 //Produce a few errors while greatly speeding up computation
 
 var INACTIVE = -1;
@@ -43,7 +46,14 @@ var self = {
     pointer["rank"] = zipfProb;
   },
 
-  getWordProb: function(word) {
+  getWordProb: function(word, alsoCheckStemmed = true) {
+    if (textUtil.isNumber(word)) {
+      //Assigning a constant probability to every number favors longer continuous numbers,
+      //i.e. P(1000) > P(1,0,0,0);
+      var numberLenProb = Math.log( 1000 * LOG_TOTAL_NUM_WORDS );
+      return numberLenProb;
+    }
+    var word = word.toLowerCase();
     var pointer = self._data;
     for (var i = 0; i < word.length; i++) {
       var char = word.charAt(i);
@@ -52,7 +62,11 @@ var self = {
       }
       pointer = pointer[char];
     }
-    if (pointer["rank"] === undefined) return INACTIVE;
+    if (pointer["rank"] === undefined) { //Check the base word first.
+      //If not available and we want to check the stemmed word, do so.
+      if (alsoCheckStemmed) return self.getWordProb(stemmer.stemWord(word), false);
+      else return INACTIVE;
+    }
     return pointer["rank"];
   },
 
@@ -75,7 +89,7 @@ var self = {
     });
 
     lineReader.on('close', function () {
-      var shortTestString = "itwasadarkandstormynighttherainfell";
+      var shortTestString = "HandsOffOurCoast";
       var longTestString = "itwasadarkandstormynighttherainfellintorrentsexceptatoccasionalintervalswhenitwascheckedbyaviolentgustofwindwhichsweptupthestreetsforitisinlondonthatoursceneliesrattlingalongthehousetopsandfiercelyagitatingthescantyflameofthelampsthatstruggledagainstthedarkness";
       var spacedWords = self.inferSpaces(shortTestString);
       console.log(spacedWords);
@@ -94,10 +108,10 @@ var self = {
       var start = Math.max(0, i-MAX_WORD);
       var end = i;
       var bestMatch = [9999, start];
-      console.log("-----------------------" + start + " " + end);
+      //console.log("-----------------------" + start + " " + end);
       for (var k = start; k < end; k++) {
         //console.log(s.substring(i-k-1, i) + " " + s.substring(k, i) + " " + cost[i-k-1] + " " + self.getWordProb(s.substring(i-k-1, i)))
-        console.log(s.substring(k, i) + " " + cost[k] + " " + self.getWordProb(s.substring(k, i)));
+        //console.log(s.substring(k, i) + " " + cost[k] + " " + self.getWordProb(s.substring(k, i)));
         if (self.getWordProb(s.substring(k, i)) === undefined) {
           continue;
         }
@@ -126,7 +140,7 @@ var self = {
           bestMatch[1] = k+1;
         }
       }
-      console.log("Found best match: " + bestMatch[1]);
+      //console.log("Found best match: " + bestMatch[1]);
       return bestMatch;
     }
 
@@ -137,9 +151,6 @@ var self = {
       var match = best_match(i);
       cost.push(match[0]);
     }
-
-    console.log(s);
-    console.log(cost);
 
     //Backtrack to recover the minimal-cost string
     var out = [];
@@ -157,6 +168,7 @@ var self = {
 
   inferSpacesString: function(s) {
     var arrTokens = self.inferSpaces(s);
+    console.log(s + ":" + arrTokens.join(" "));
     return arrTokens.join(" ");
   }
 

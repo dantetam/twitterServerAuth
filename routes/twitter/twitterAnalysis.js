@@ -47,7 +47,16 @@ var self = module.exports = {
     //the hashtag symbol, which is discarded; and the hashtag topic, which is divided into words since it is usually camelCase
     var tweetSplitHashtags = tweet.replace(/(\#)([a-zA-Z0-9]+)/g, function(match, group1, group2, index, original) {
       //return textUtil.camelCaseSeparate(group2);
-      return trieWordFreq.inferSpacesString(group2);
+      var numUpper = group2.length - group2.replace(/[A-Z]/g, '').length; //Syntax sugar for counting capital letters
+      if (trieDictionary.findWord(group2) || trieDictionary.findWord(stemmer.stemWord(group2))) {
+        return group2;
+      }
+      if ((numUpper >= 1 && numUpper < 0.76 * group2.length) || group2.length <= 10) {
+        return textUtil.camelCaseSeparate(group2);
+      }
+      else {
+        return trieWordFreq.inferSpacesString(group2);
+      }
     });
 
     var stopWordsDict = self.getStopWords();
