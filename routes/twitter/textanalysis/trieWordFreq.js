@@ -75,7 +75,7 @@ var self = {
     });
 
     lineReader.on('close', function () {
-      var shortTestString = "nightnightknight";
+      var shortTestString = "itwasadarkandstormynighttherainfell";
       var longTestString = "itwasadarkandstormynighttherainfellintorrentsexceptatoccasionalintervalswhenitwascheckedbyaviolentgustofwindwhichsweptupthestreetsforitisinlondonthatoursceneliesrattlingalongthehousetopsandfiercelyagitatingthescantyflameofthelampsthatstruggledagainstthedarkness";
       var spacedWords = self.inferSpaces(shortTestString);
       console.log(spacedWords);
@@ -94,17 +94,19 @@ var self = {
       var start = Math.max(0, i-MAX_WORD);
       var end = i;
       var bestMatch = [9999, start];
+      console.log("-----------------------" + start + " " + end);
       for (var k = start; k < end; k++) {
-        console.log(s.substring(i-k-1, i) + " " + cost[i-k-1] + " " + self.getWordProb(s.substring(i-k-1, i)))
-        if (self.getWordProb(s.substring(i-k-1, i)) === undefined) {
+        //console.log(s.substring(i-k-1, i) + " " + s.substring(k, i) + " " + cost[i-k-1] + " " + self.getWordProb(s.substring(i-k-1, i)))
+        console.log(s.substring(k, i) + " " + cost[k] + " " + self.getWordProb(s.substring(k, i)));
+        if (self.getWordProb(s.substring(k, i)) === undefined) {
           continue;
         }
-        if (cost[i-k-1] === undefined || self.getWordProb(s.substring(i-k-1, i)) === INACTIVE) {
+        if (cost[k] === undefined || self.getWordProb(s.substring(k, i)) === INACTIVE) {
           //TODO: efficiently stop computation if a word prefix is _entirely_ not found within the trie structure
           //Note that multiple distinctions need to be made:
           //nonexistent nodes ("darkz"), inactive nodes ("dar"), and active nodes ("dark").
           /*
-          Note that words are processed in this order:
+          Note that words are processed in this order (in "nightnightknight"):
 
           t 9999 -1
           ht 9999 3.3189390950359563
@@ -119,11 +121,12 @@ var self = {
           */
           continue;
         }
-        if (cost[i-k-1] + self.getWordProb(s.substring(i-k-1, i)) < bestMatch[0] || bestMatch[1] === -1) {
-          bestMatch[0] = cost[i-k-1] + self.getWordProb(s.substring(i-k-1, i));
+        if (cost[k] + self.getWordProb(s.substring(k, i)) < bestMatch[0] || bestMatch[1] === -1) {
+          bestMatch[0] = cost[k] + self.getWordProb(s.substring(k, i));
           bestMatch[1] = k+1;
         }
       }
+      console.log("Found best match: " + bestMatch[1]);
       return bestMatch;
     }
 
@@ -135,19 +138,26 @@ var self = {
       cost.push(match[0]);
     }
 
+    console.log(s);
+    console.log(cost);
+
     //Backtrack to recover the minimal-cost string
     var out = [];
     var i = s.length;
     while (i>0) {
       var match = best_match(i);
       var c = match[0]; var k = match[1];
-      var chosenWord = s.substring(i-k, i);
+      var chosenWord = s.substring(k-1, i);
       out.unshift(chosenWord);
-      i -= k;
+      i = k-1;
     }
-
     return out;
     //return " ".join(reversed(out))
+  },
+
+  inferSpacesString: function(s) {
+    var arrTokens = self.inferSpaces(s);
+    return arrTokens.join(" ");
   }
 
 };

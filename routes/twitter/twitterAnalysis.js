@@ -46,7 +46,8 @@ var self = module.exports = {
     //Capture all hashtag regex patterns, which returns two groups for each full match:
     //the hashtag symbol, which is discarded; and the hashtag topic, which is divided into words since it is usually camelCase
     var tweetSplitHashtags = tweet.replace(/(\#)([a-zA-Z0-9]+)/g, function(match, group1, group2, index, original) {
-      return textUtil.camelCaseSeparate(group2);
+      //return textUtil.camelCaseSeparate(group2);
+      return trieWordFreq.inferSpacesString(group2);
     });
 
     var stopWordsDict = self.getStopWords();
