@@ -10,9 +10,6 @@ var readline = require('readline');
 var fs = require('fs');
 var async = require("async");
 
-var metrics = require("./math/metrics");
-var util = require("../util.js");
-
 var word2vecDir = "./word2vec/";
 var vaderSentimentFile = "./vaderSentiment/vader_lexicon.txt";
 

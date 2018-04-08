@@ -35,8 +35,8 @@ var readline = require('readline');
 var fs = require('fs');
 var async = require("async");
 
-var metrics = require("./math/metrics");
-var util = require("../util.js");
+var metrics = require("../math/metrics");
+var util = require("../../util.js");
 var vecLookup = require("./vecLookup.js");
 
 var DEFAULT_THRESHOLD_SIMILARITY = 3.5;

@@ -7,7 +7,7 @@ var request = require("request");
 var authKeys = require('./twitterAuth.json');
 var twitterAnalysis = require('./twitterAnalysis.js');
 var twitterStoreUtil = require('./twitterStoreDatabase.js');
-var cluster = require('./unsupervisedCluster.js');
+var cluster = require('./cluster/unsupervisedCluster.js');
 
 var Tweet = require("../../models/twitterApi/tweet");
 var UniqueTweet = require("../../models/twitterApi/uniqueTweet");
@@ -431,7 +431,7 @@ router.get('/tweetAndUserLookup', function(req, res, next) {
       getUserTimelineTweets(randomUserScreenName, function(err, twitterUser) {
         var userDisplayString;
         if (twitterUser === null) {
-          userDisplayString = ""; 
+          userDisplayString = "";
         }
         else {
           userDisplayString = "Storing timeline from user: "
