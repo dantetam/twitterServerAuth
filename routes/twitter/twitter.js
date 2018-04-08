@@ -424,21 +424,36 @@ router.get('/tweetAndUserLookup', function(req, res, next) {
   Repeat(function() {
     getTweetsWithTrendingTopic(null, function(err, retrievedTweets) {
       if (retrievedTweets === null || retrievedTweets["statuses"] === null) return;
-      //Get a random user from one tweet and look that user up
-      var randomIndex = Math.floor(Math.random() * retrievedTweets["statuses"].length);
-      var randomUserScreenName = retrievedTweets["statuses"][randomIndex]["user"]["screen_name"];
 
-      getUserTimelineTweets(randomUserScreenName, function(err, twitterUser) {
-        var userDisplayString;
-        if (twitterUser === null) {
-          userDisplayString = "";
+      //Get random users from tweets and send to final response callback when done retrieving
+      var numUsersToQuery = Math.min(retrievedTweets["statuses"].length, siteData.NUM_USERS_PER_FRAME);
+      var userTimelineFuncs = [];
+      for (var i = 0; i < numUsersToQuery; i++) {
+        let userScreenName = retrievedTweets["statuses"][i]["user"]["screen_name"];
+        let userTimelineLookup = function(next) {
+          getUserTimelineTweets(userScreenName, next);
+        };
+        userTimelineFuncs.push(userTimelineLookup);
+      }
+
+      //Once doing processing all users, format all users' names into a string,
+      //which is sent through a socket.io connection to the client (browser).
+      async.parallel(
+        userTimelineFuncs,
+        function(err, twitterUsers) { //Final callback after parallel execution
+          var userDisplayString = "Storing data (timelines) from user(s): ";
+          for (let twitterUser of twitterUsers) {
+            if (twitterUser == null) {
+              userDisplayString += "(A null user); ";
+            }
+            else {
+              userDisplayString += twitterUser["screenName"] + " (" + twitterUser["authorPrettyName"] + "); ";
+            }
+          }
+          //Still send the retrieved tweets to the client as well
+          tweetsCallback(err, retrievedTweets, userDisplayString);
         }
-        else {
-          userDisplayString = "Storing timeline from user: "
-            + twitterUser["screenName"] + " (" + twitterUser["authorPrettyName"] + ")\n";
-        }
-        tweetsCallback(err, retrievedTweets, userDisplayString);
-      });
+      );
     });
   }).every(process.env.SERVER_MS_DELAY, 'ms').start.now();
 

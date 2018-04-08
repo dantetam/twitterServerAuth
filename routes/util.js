@@ -35,6 +35,22 @@ var self = module.exports = {
       return b[1] - a[1]; //Sort by word count in descending order
     });
     return listSortedResults;
+  },
+
+  /**
+   * Shuffles array in place.
+   * The 'modern Fisher-Yates shuffle', sourced from
+   * https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array#answer-6274381
+   * @param {Array} a An array containing the items.
+   */
+  shuffleInPlace: function(a) {
+    var j, x, i;
+    for (i = a.length - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1));
+      x = a[i];
+      a[i] = a[j];
+      a[j] = x;
+    }
   }
 
 }

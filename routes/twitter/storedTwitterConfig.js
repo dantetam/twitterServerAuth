@@ -7,6 +7,7 @@ var siteData = {
   TOPIC_SEARCH_API_CACHE: [],
   TOPIC_FRAME_NUM: 0, //A counter to keep track of how many updates a topic list has been used for
   TOPIC_FRAME_GET_NEW: 12, //The frame at which to discard cached Twitter API results and retrieve new ones
+  NUM_USERS_PER_FRAME: 5,
 
   SMALL_QUERY_LIMIT: 200,
   DEFAULT_QUERY_LIMIT: 1000,
