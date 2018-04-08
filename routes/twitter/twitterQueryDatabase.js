@@ -75,7 +75,6 @@ var self = module.exports = {
     }
     var query = {};
     if (regexArray.length > 0) query = {"text": {$in : regexArray}};
-    var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
     UniqueTweet.aggregate(
       [
         {$match: query},
