@@ -78,7 +78,7 @@ function findBearerToken(userTopic, next) {
     json: true,
     body: "grant_type=client_credentials"
   }, function(err, resp, body) {
-    if (err) throw err;
+    if (err) console.log(err);
     process.env.CURRENT_BEARER_TOKEN = body["access_token"];
     if (next) next(err, resp, body);
   });

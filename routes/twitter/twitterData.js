@@ -12,51 +12,11 @@ var cluster = require('./cluster/unsupervisedCluster.js');
 var vecLookup = require('./cluster/vecLookup.js');
 var metrics = require("./math/metrics.js");
 var util = require('../util.js');
-
-var SMALL_QUERY_LIMIT = 200;
-var DEFAULT_QUERY_LIMIT = 1000;
-var LARGE_QUERY_LIMIT = 10000;
-
-var TWITTER_SERVER_DATA_DIR_NAME = "twitterServer";
-
-var databaseUrl = process.env.MONGODB_URI || "mongodb://localhost:27017/";
+var twitterQuery = require('./twitterQueryDatabase.js');
+var siteData = require("./storedTwitterConfig.js");
 
 //TODO: Merge all the query tweets async/promises into a uniform method for querying tweets,
 //and then custom callbacks to handle the results differently per use case.
-
-function connectToTweetData(next) {
-  //connect to MongoDB, initiate callback onConnection, using new mongoDB 3.0 client syntax
-  MongoClient.connect(databaseUrl, function(err, client) {   //Return the mongoDB client obj
-    //The client object encompasses the whole database
-    if (err) throw err;
-    next(null, client);
-  });
-}
-
-//Async lookup all tweets in the database that belong to a certain user.
-function queryUserTweets(screenName, callback) {
-  async.waterfall([
-    function(next) {
-      connectToTweetData(next);
-    },
-    function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      TwitterUser.findOne({"screenName": screenName}, function(err, twitterUser) {
-        if (twitterUser === null) { //The user was not found in the database
-          next(err, null);
-        }
-        else {
-          queryTweetsFromIdList(twitterUser["userTweetIds"], next);
-        }
-      });
-    }
-  ], function(err, result) {
-    if (err) throw err;
-    if (callback) {
-      callback(null, result);
-    }
-  });
-}
 
 
 //Lookup tweets from the database using the local mongoDB ids ("_id"), not the Twitter internal ids.
@@ -78,10 +38,9 @@ function queryTweetsFromIdList(tweetDataIdList, next) {
 An async callback to query a large amount of tweets for use wherever.
 */
 function queryLargeCorpusTweets(callback) {
-  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   async.waterfall([
     function(next) { //Find a not random subsampling of tweets to show
-      aggregateBasic({}, LARGE_QUERY_LIMIT, next);
+      twitterQuery.aggregateBasic({}, siteData.LARGE_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) {
       var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
@@ -158,7 +117,7 @@ function advancedSearch(originalSearch, callback) {
           }
         }
       }
-      aggregateMultipleOrTerms(allSearchTerms, LARGE_QUERY_LIMIT, next);
+      twitterQuery.aggregateMultipleOrTerms(allSearchTerms, siteData.LARGE_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) {
       var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
@@ -169,48 +128,6 @@ function advancedSearch(originalSearch, callback) {
     if (callback) callback(err, result);
   });
 }
-
-
-function aggregateBasic(query, sampleLength, next) {
-  var query = {};
-  UniqueTweet.aggregate(
-    [
-      {$match: query},
-      {$project: {_id: 1, text: 1}},
-      {$sample: {size: sampleLength}}
-    ],
-    function(err, sampleTweets) {
-      if (err) throw err;
-      if (next) next(null, sampleTweets);
-    }
-  );
-}
-
-/**
-An async query to retrieve tweets that contain any terms within _searchTerms_, through a special mongoDB regex query.
-The tweet objects (with fields in _dataInclude_) are sent to the callback.
-*/
-function aggregateMultipleOrTerms(searchTerms, sampleLength, next) {
-  var regexArray = [];
-  for (var searchTerm of searchTerms) {
-    regexArray.push(new RegExp(searchTerm, "i"));
-  }
-  var query = {};
-  if (regexArray.length > 0) query = {"text": {$in : regexArray}};
-  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
-  UniqueTweet.aggregate(
-    [
-      {$match: query},
-      {$project: {_id: 1, text: 1}},
-      {$sample: {size: sampleLength}}
-    ],
-    function(err, sampleTweets) {
-      if (err) throw err;
-      if (next) next(null, sampleTweets);
-    }
-  );
-}
-
 
 /**
 
@@ -234,7 +151,7 @@ function topicClustersTweetRetrieval(numClusters, callback) {
             next(null, totalResults);
           }
         };
-        aggregateMultipleOrTerms(groupedTerms[i], LARGE_QUERY_LIMIT, retrieveGroupTweetsCallback);
+        twitterQuery.aggregateMultipleOrTerms(groupedTerms[i], siteData.DEFAULT_QUERY_LIMIT, retrieveGroupTweetsCallback);
       }
     }
   ], function(err, clusteredTweets) {
@@ -252,7 +169,7 @@ see findTweetSentimentOnTopics(...);
 function findUserSentimentOnTopics(screen_name, topicsList, callback) {
   async.waterfall([
     function(next) {
-      queryUserTweets(screen_name, next);
+      twitterQuery.queryUserTweets(screen_name, next);
     },
     function(tweetObjs, next) {
       var texts = tweetObjs.map(function(x) {return x["text"];});
@@ -354,7 +271,6 @@ Query lots of tweets (according to the query parameters) and find their sentimen
 */
 function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
   var query = {};
-  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
   if (beginDate && endDate) {
     query['creationTime'] = {
@@ -368,7 +284,7 @@ function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
 
   async.waterfall([
     function(next) { //Find a not random subsampling of tweets to show
-      aggregateBasic(query, SMALL_QUERY_LIMIT, next);
+      twitterQuery.aggregateBasic(query, siteData.SMALL_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       collectedSampleTweets = sampleTweets;
@@ -398,7 +314,6 @@ and finally, send the clusters in a pretty string format to the response.
 */
 function queryTweetsTopicGrouping(beginDate, endDate, response) {
   var query = {};
-  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   if (beginDate && endDate) {
     query['creationTime'] = {
       $gte: new Date(beginDate),
@@ -415,7 +330,7 @@ function queryTweetsTopicGrouping(beginDate, endDate, response) {
         next(null, tweetsTextArr);
       });
       */
-      aggregateBasic(query, LARGE_QUERY_LIMIT, next);
+      twitterQuery.aggregateBasic(query, siteData.LARGE_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       //And also parse the tokens and keep only proper nouns for the clustering algorithm
@@ -441,7 +356,6 @@ and finally, send the clusters in a pretty string format to the response.
 */
 function queryTweetsCluster(queryString, beginDate, endDate, response) {
   var query = {};
-  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
   if (beginDate && endDate) {
     query['creationTime'] = {
@@ -454,7 +368,7 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
 
   async.waterfall([
     function(next) { //Find a not random subsampling of tweets to show
-      aggregateBasic(query, DEFAULT_QUERY_LIMIT, next);
+      twitterQuery.aggregateBasic(query, siteData.DEFAULT_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       collectedSampleTweets = sampleTweets;
@@ -481,7 +395,6 @@ and send the tree in a stringified format to the response.
 */
 function queryTweetsMst(queryString, beginDate, endDate, response) {
   var query = {};
-  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
   if (beginDate && endDate) {
     query['creationTime'] = {
@@ -494,7 +407,7 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
 
   async.waterfall([
     function(next) { //Find a not random subsampling of tweets to show
-      aggregateBasic(query, DEFAULT_QUERY_LIMIT, next);
+      twitterQuery.aggregateBasic(query, siteData.DEFAULT_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       collectedSampleTweets = sampleTweets;
@@ -526,7 +439,6 @@ i.e. bigrams indexed by first term (see twitterAnalysis.bigramCounter).
 */
 function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) {
   var query = {};
-  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');
   if (beginDate && endDate) {
     query['creationTime'] = {
@@ -539,7 +451,7 @@ function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) 
 
   async.waterfall([
     function(next) { //Find a not random subsampling of tweets to show
-      aggregateBasic(query, DEFAULT_QUERY_LIMIT, next);
+      twitterQuery.aggregateBasic(query, siteData.DEFAULT_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       collectedSampleTweets = sampleTweets;
@@ -582,32 +494,9 @@ and send these tweets to the response. The output mode defaults to JSON,
 with an option for text.
 */
 function queryData(query, response, outputMode) {
-  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
-
   async.waterfall([
     function(next) {
-      connectToTweetData(next);
-    },
-    function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      dbase.collection("tweets").find(query, dataInclude).limit(DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
-        if (err) throw err;
-        next(null, client, sampleTweets);
-      });
-    },
-    function(client, sampleTweets, next) {
-      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      dbase.collection("tweets").find(query, dataInclude).toArray(function(err, result) {
-        if (err) throw err;
-        client.close();
-        var queryCount = result.length;
-        next(null, sampleTweets, queryCount);
-      });
-    },
-    function(sampleTweets, queryCount, next) {
-      UniqueTweet.count({}, function (err, totalCount) {
-        next(err, sampleTweets, queryCount, totalCount);
-      });
+      twitterQuery.queryDatabaseTweetsAndStats(query, next);
     }
   ], function(err, sampleTweets, queryCount, totalCount) {
     if (err) {
@@ -616,7 +505,7 @@ function queryData(query, response, outputMode) {
     if (outputMode === "text") {
       response.writeHead(200, {"Content-Type": "text/html; charset=utf-8"});
 
-      var tweetsNumShown = Math.min(queryCount, DEFAULT_QUERY_LIMIT);
+      var tweetsNumShown = Math.min(queryCount, siteData.DEFAULT_QUERY_LIMIT);
       response.write("Total Tweets Found: " + queryCount + " out of " + totalCount + " (" + tweetsNumShown + " shown) \n \n \n");
       response.write(JSON.stringify(sampleTweets));
       response.end();
@@ -633,11 +522,11 @@ function queryLotsOfTweets(response) {
   var query = {};
   async.waterfall([
     function(next) {
-      connectToTweetData(next);
+      twitterQuery.connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      dbase.collection("tweets").find(query, dataInclude).limit(LARGE_QUERY_LIMIT).toArray(function(err, sampleTweets) {
+      var dbase = client.db(siteData.TWITTER_SERVER_DATA_DIR_NAME);
+      dbase.collection("tweets").find(query, dataInclude).limit(siteData.LARGE_QUERY_LIMIT).toArray(function(err, sampleTweets) {
         if (err) throw err;
         client.close();
         next(null, sampleTweets);
@@ -693,7 +582,7 @@ router.get('/userSentiment/:screenNameA/:screenNameB', function(req, res, next) 
 router.get('/user/:screenName', function(req, res, next) {
   var screenName = req.params["screenName"];
   var outputMode = req.query["output"];
-  queryUserTweets(screenName, function(err, tweets) {
+  twitterQuery.queryUserTweets(screenName, function(err, tweets) {
     if (tweets === null) { //The queried user was not found
       res.render('twitterDataUserNotFound', {"screenName": screenName})
     }
@@ -794,7 +683,7 @@ router.get('/advSearch/:topic', function(req, res, next) {
   });
 });
 
-router.get('/topicClustersTweetRetrieval/', function(req, res, next) {
+router.get('/clustersTweetSearch/', function(req, res, next) {
   topicClustersTweetRetrieval(50, function(err, result) {
     res.send(result);
   });
