@@ -55,7 +55,13 @@ var self = module.exports = {
         return textUtil.camelCaseSeparate(group2);
       }
       else {
-        return trieWordFreq.inferSpacesString(group2);
+        var inferSpacesResult = trieWordFreq.inferSpacesString(group2);
+        if (inferSpacesResult.length >= group2.length / 4) {
+          return group2;
+        }
+        else {
+          return inferSpacesResult;
+        }
       }
     });
 

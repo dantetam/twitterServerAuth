@@ -88,12 +88,15 @@ var self = {
       lineCounter++;
     });
 
+    /*
+    //Test for trieWordFreq when done reading word frequencies file
     lineReader.on('close', function () {
       var shortTestString = "HandsOffOurCoast";
       var longTestString = "itwasadarkandstormynighttherainfellintorrentsexceptatoccasionalintervalswhenitwascheckedbyaviolentgustofwindwhichsweptupthestreetsforitisinlondonthatoursceneliesrattlingalongthehousetopsandfiercelyagitatingthescantyflameofthelampsthatstruggledagainstthedarkness";
       var spacedWords = self.inferSpaces(shortTestString);
       console.log(spacedWords);
     });
+    */
   },
 
   inferSpaces: function(s) {

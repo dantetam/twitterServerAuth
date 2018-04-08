@@ -9,11 +9,12 @@ var Tweet = require("../../models/twitterApi/tweet");
 var UniqueTweet = require("../../models/twitterApi/uniqueTweet");
 var TwitterUser = require("../../models/twitterApi/twitterUser");
 var cluster = require('./unsupervisedCluster.js');
+var vecLookup = require('./vecLookup.js');
 var metrics = require("./math/metrics.js");
 var util = require('../util.js');
 
 var SMALL_QUERY_LIMIT = 200;
-var DEFAULT_QUERY_LIMIT = 500;
+var DEFAULT_QUERY_LIMIT = 1000;
 var LARGE_QUERY_LIMIT = 10000;
 
 var TWITTER_SERVER_DATA_DIR_NAME = "twitterServer";
@@ -79,23 +80,12 @@ An async callback to query a large amount of tweets for use wherever.
 function queryLargeCorpusTweets(callback) {
   var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
   async.waterfall([
-    function(next) {
-      connectToTweetData(next);
+    function(next) { //Find a not random subsampling of tweets to show
+      aggregateBasic({}, LARGE_QUERY_LIMIT, next);
     },
-    function(client, next) { //Find a not random subsampling of tweets to show
-      var query = {};
-      UniqueTweet.aggregate(
-        [
-          {$match: query},
-          {$project: {_id: 1, text: 1}},
-          {$sample: {size: LARGE_QUERY_LIMIT}}
-        ],
-        function(err, sampleTweets) {
-          if (err) throw err;
-          var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
-          next(null, tweetStrings);
-        }
-      );
+    function(sampleTweets, next) {
+      var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+      next(null, tweetStrings);
     }
   ], function(err, tweetStrings) {
     if (err) throw err;
@@ -126,7 +116,9 @@ function findLargeSetProperNouns(callback) {
 
 
 /**
-
+Async. use the Bayesian MLE methods described in unsupervisedCluster
+(see findAssocFromProperNouns and groupAssociatedTerms) to determine commonly linked words
+from a large corpus of tweets.
 */
 function findTopicAssociations(callback) {
   async.waterfall([
@@ -146,6 +138,10 @@ function findTopicAssociations(callback) {
 }
 
 
+/**
+An async query to gather up all terms including and related to the term _originalSearch_,
+and send all tweets to the callback.
+*/
 function advancedSearch(originalSearch, callback) {
   async.waterfall([
     function(next) {
@@ -162,7 +158,7 @@ function advancedSearch(originalSearch, callback) {
           }
         }
       }
-      queryMultipleOrTerms(allSearchTerms, next);
+      aggregateMultipleOrTerms(allSearchTerms, LARGE_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) {
       var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
@@ -175,10 +171,26 @@ function advancedSearch(originalSearch, callback) {
 }
 
 
-/**
+function aggregateBasic(query, sampleLength, next) {
+  var query = {};
+  UniqueTweet.aggregate(
+    [
+      {$match: query},
+      {$project: {_id: 1, text: 1}},
+      {$sample: {size: sampleLength}}
+    ],
+    function(err, sampleTweets) {
+      if (err) throw err;
+      if (next) next(null, sampleTweets);
+    }
+  );
+}
 
+/**
+An async query to retrieve tweets that contain any terms within _searchTerms_, through a special mongoDB regex query.
+The tweet objects (with fields in _dataInclude_) are sent to the callback.
 */
-function queryMultipleOrTerms(searchTerms, next) {
+function aggregateMultipleOrTerms(searchTerms, sampleLength, next) {
   var regexArray = [];
   for (var searchTerm of searchTerms) {
     regexArray.push(new RegExp(searchTerm, "i"));
@@ -190,7 +202,7 @@ function queryMultipleOrTerms(searchTerms, next) {
     [
       {$match: query},
       {$project: {_id: 1, text: 1}},
-      {$sample: {size: LARGE_QUERY_LIMIT}}
+      {$sample: {size: sampleLength}}
     ],
     function(err, sampleTweets) {
       if (err) throw err;
@@ -222,12 +234,12 @@ function topicClustersTweetRetrieval(numClusters, callback) {
             next(null, totalResults);
           }
         };
-        queryMultipleOrTerms(groupedTerms[i], retrieveGroupTweetsCallback);
+        aggregateMultipleOrTerms(groupedTerms[i], LARGE_QUERY_LIMIT, retrieveGroupTweetsCallback);
       }
     }
-  ], function(err, result) {
+  ], function(err, clusteredTweets) {
     if (err) throw err;
-    if (callback) callback(err, result);
+    if (callback) callback(err, clusteredTweets);
   });
 }
 
@@ -287,7 +299,7 @@ function findTweetSentimentOnTopics(doubleArrTokens, properNounTokens, topicsLis
         }
       }
     };
-    cluster.getAvgSentimentFromSentence(arrTokens, sentimentVecCallback);
+    vecLookup.getAvgSentimentFromSentence(arrTokens, sentimentVecCallback);
   }
 }
 
@@ -355,31 +367,15 @@ function queryTweetsSentiment(queryString, beginDate, endDate, callback) {
   var properNounTokens = null;
 
   async.waterfall([
-    function(next) {
-      connectToTweetData(next);
-    },
-    function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      //console.log(query);
-      UniqueTweet.aggregate(
-          [
-              {$match: query},
-              {$project: {_id: 1, text: 1}},
-              //{"$limit": SMALL_QUERY_LIMIT}
-              {$sample: {size: SMALL_QUERY_LIMIT}}
-          ],
-          function(err, sampleTweets) {
-              if (err) throw err;
-              collectedSampleTweets = sampleTweets;
-              var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
-              next(null, tweetStrings);
-          }
-      );
+    function(next) { //Find a not random subsampling of tweets to show
+      aggregateBasic(query, SMALL_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
-      var tweetArrTokens = twitterAnalysis.sanitizeTweets(sampleTweets);
-      properNounTokens = twitterAnalysis.findProperNounsFromStrings(sampleTweets); //Stored globally so it can be sent to next and webpage
-      cluster.sentenceGroupGetSentiment(tweetArrTokens, next);
+      collectedSampleTweets = sampleTweets;
+      var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+      var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetStrings);
+      properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings); //Stored globally so it can be sent to next and webpage
+      vecLookup.sentenceGroupGetSentiment(tweetArrTokens, next);
     }
   ], function(err, sentimentData) {
     if (err) throw err;
@@ -411,25 +407,25 @@ function queryTweetsTopicGrouping(beginDate, endDate, response) {
   }
 
   async.waterfall([
-    function(next) {
-      connectToTweetData(next);
-    },
-    function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
+    function(next) { //Find a not random subsampling of tweets to show
+      /*
       UniqueTweet.find().distinct('text', query, function(err, tweetsTextArr) { //Instead of returning the full tweet objects,
         //the callback result 'tweetsTextArr' is an array of strings (tweets).
         if (err) throw err;
         next(null, tweetsTextArr);
       });
+      */
+      aggregateBasic(query, LARGE_QUERY_LIMIT, next);
     },
-    function(tweetsTextArr, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
+    function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
       //And also parse the tokens and keep only proper nouns for the clustering algorithm
-      var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetsTextArr);
+      var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+      var properNounTokens = twitterAnalysis.findProperNounsFromStrings(tweetStrings);
       var result = cluster.testProperNounTopicGrouping(properNounTokens);
-      next(null, tweetsTextArr, result);
+      next(null, tweetStrings, result);
     }
-  ], function(err, tweetsTextArr, clusters) {
-    var result = twitterAnalysis.stringifyClustersTweets(tweetsTextArr, clusters);
+  ], function(err, tweetStrings, clusters) {
+    var result = twitterAnalysis.stringifyClustersTweets(tweetStrings, clusters);
     response.send(result);
   });
 }
@@ -457,27 +453,13 @@ function queryTweetsCluster(queryString, beginDate, endDate, response) {
   var collectedSampleTweets = null;
 
   async.waterfall([
-    function(next) {
-      connectToTweetData(next);
-    },
-    function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      UniqueTweet.aggregate(
-          [
-              {$match: query},
-              {$project: {_id: 1, text: 1}},
-              {$sample: {size: DEFAULT_QUERY_LIMIT}}
-          ],
-          function(err, sampleTweets) {
-              if (err) throw err;
-              collectedSampleTweets = sampleTweets;
-              var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
-              next(null, tweetStrings);
-          }
-      );
+    function(next) { //Find a not random subsampling of tweets to show
+      aggregateBasic(query, DEFAULT_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
-      var tweetArrTokens = twitterAnalysis.sanitizeTweets(sampleTweets);
+      collectedSampleTweets = sampleTweets;
+      var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+      var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetStrings);
       cluster.testCluster(tweetArrTokens, next);
     }
   ], function(err, clusters) {
@@ -511,29 +493,13 @@ function queryTweetsMst(queryString, beginDate, endDate, response) {
   var collectedSampleTweets = null;
 
   async.waterfall([
-    function(next) {
-      connectToTweetData(next);
-    },
-    function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      UniqueTweet.aggregate(
-          [
-              {$match: query},
-              {$project: {_id: 1, text: 1}},
-              {$sample: {size: DEFAULT_QUERY_LIMIT}}
-          ],
-          function(err, results) {
-              collectedSampleTweets = results; //Store results for later use out of scope
-              next(null, results);
-          }
-      );
+    function(next) { //Find a not random subsampling of tweets to show
+      aggregateBasic(query, DEFAULT_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
-      var tweetsTextArr = [];
-      for (var tweet of sampleTweets) {
-        tweetsTextArr.push(tweet["text"]);
-      }
-      var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetsTextArr);
+      collectedSampleTweets = sampleTweets;
+      var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+      var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetStrings);
       next(null, tweetArrTokens);
     },
     function(tweetArrTokens, next) { //Use the Twitter analysis to convert word tokens -> vector embeddings -> clusters.
@@ -572,29 +538,13 @@ function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) 
   var collectedSampleTweets = null;
 
   async.waterfall([
-    function(next) {
-      connectToTweetData(next);
-    },
-    function(client, next) { //Find a not random subsampling of tweets to show
-      var dbase = client.db(TWITTER_SERVER_DATA_DIR_NAME);
-      UniqueTweet.aggregate(
-          [
-              {$match: query},
-              {$project: {_id: 1, text: 1}},
-              {$sample: {size: DEFAULT_QUERY_LIMIT}}
-          ],
-          function(err, results) {
-              collectedSampleTweets = results; //Store results for later use out of scope
-              next(null, results);
-          }
-      );
+    function(next) { //Find a not random subsampling of tweets to show
+      aggregateBasic(query, DEFAULT_QUERY_LIMIT, next);
     },
     function(sampleTweets, next) { //Convert the found tweet objects into a multi-dimensional array of word tokens
-      var tweetsTextArr = [];
-      for (var tweet of sampleTweets) {
-        tweetsTextArr.push(tweet["text"]);
-      }
-      var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetsTextArr);
+      collectedSampleTweets = sampleTweets;
+      var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+      var tweetArrTokens = twitterAnalysis.sanitizeTweets(tweetStrings);
       next(null, tweetArrTokens);
     },
     function(tweetArrTokens, next) { //Use the Twitter analysis to convert word tokens -> vector embeddings -> clusters.
@@ -790,7 +740,7 @@ router.get('/user/:screenName', function(req, res, next) {
         }
       };
 
-      cluster.sentenceGroupGetSentiment(twitterAnalysis.sanitizeTweets(tweetStrings), resWriteCallback);
+      vecLookup.sentenceGroupGetSentiment(twitterAnalysis.sanitizeTweets(tweetStrings), resWriteCallback);
     }
   });
 });
