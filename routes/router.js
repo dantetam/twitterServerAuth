@@ -9,6 +9,8 @@ var Tweet = require('../models/twitterApi/tweet');
 var WebPage = require("../models/loginAuth/webpage");
 var Website = require("../models/loginAuth/website");
 
+var siteData = require("./twitter/storedTwitterConfig.js");
+
 function getServerStatus(next) {
   Tweet.count({}, function (err, count) {
     if (err) {}
@@ -36,6 +38,10 @@ router.get('/readme', function(req, res, next) {
 
 router.get('/count', function(req, res, next) {
   queryServerStatus(res);
+});
+
+router.get('/config', function(req, res, next) {
+  res.render('siteDataConfig', {siteData: JSON.stringify(siteData)});
 });
 
 // GET route for reading data

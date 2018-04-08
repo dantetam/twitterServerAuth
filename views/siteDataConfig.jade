@@ -1,0 +1,21 @@
+h3 Server Data and Settings Configuration
+
+p This is an endpoint to view and modify server-wide variables which control server algorithms and other endpoints.
+
+p !{siteData}
+
+form(action="" method="post")
+  button(name="input" value="upvote")
+
+script.
+  var siteData = !{siteData}; //A JSON object indexed by variable key names, with global variables as values.
+  console.log(siteData);
+  
+  var keys = Object.keys(siteData);
+
+  for (var i = 0; i < keys.length; i++) {
+    var val = siteData[keys[i]];
+    
+  }
+  
+  //"#{testString}";
