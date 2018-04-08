@@ -168,13 +168,10 @@ var self = {
 
   inferSpacesString: function(s) {
     var arrTokens = self.inferSpaces(s);
-    console.log(s + ":" + arrTokens.join(" "));
     return arrTokens.join(" ");
   }
 
 };
-
-console.log("In trieWordFreq.js");
 
 self.readWordsFile("./routes/twitter/google-10000-english-usa.txt");
 

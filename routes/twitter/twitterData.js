@@ -14,7 +14,7 @@ var util = require('../util.js');
 
 var SMALL_QUERY_LIMIT = 200;
 var DEFAULT_QUERY_LIMIT = 500;
-var LARGE_QUERY_LIMIT = 100;
+var LARGE_QUERY_LIMIT = 10000;
 
 var TWITTER_SERVER_DATA_DIR_NAME = "twitterServer";
 
@@ -83,7 +83,6 @@ function queryLargeCorpusTweets(callback) {
       connectToTweetData(next);
     },
     function(client, next) { //Find a not random subsampling of tweets to show
-      //var query = {"text": {$in : [/obama/, /clinton/]}};
       var query = {};
       UniqueTweet.aggregate(
         [
@@ -163,27 +162,68 @@ function advancedSearch(originalSearch, callback) {
           }
         }
       }
+      queryMultipleOrTerms(allSearchTerms, next);
+    },
+    function(sampleTweets, next) {
+      var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+      next(null, tweetStrings);
+    }
+  ], function(err, result) {
+    if (err) throw err;
+    if (callback) callback(err, result);
+  });
+}
 
-      var regexArray = [];
-      for (var searchTerm of allSearchTerms) {
-        regexArray.push(new RegExp(searchTerm, "i"));
+
+/**
+
+*/
+function queryMultipleOrTerms(searchTerms, next) {
+  var regexArray = [];
+  for (var searchTerm of searchTerms) {
+    regexArray.push(new RegExp(searchTerm, "i"));
+  }
+  var query = {};
+  if (regexArray.length > 0) query = {"text": {$in : regexArray}};
+  var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
+  UniqueTweet.aggregate(
+    [
+      {$match: query},
+      {$project: {_id: 1, text: 1}},
+      {$sample: {size: LARGE_QUERY_LIMIT}}
+    ],
+    function(err, sampleTweets) {
+      if (err) throw err;
+      if (next) next(null, sampleTweets);
+    }
+  );
+}
+
+
+/**
+
+*/
+function topicClustersTweetRetrieval(numClusters, callback) {
+  async.waterfall([
+    function(next) {
+      findTopicAssociations(next);
+    },
+    function(topicAssoc, wordCountDict, groupedTerms, next) { //Find a not random subsampling of tweets to show
+      var totalResults = {};
+      var totalResultsAdded = 0;
+      for (let i = 0; i < groupedTerms.length; i++) {
+        if (i === numClusters) break;
+        let topicName = groupedTerms[i][0];
+        let retrieveGroupTweetsCallback = function(err, sampleTweets) {
+          let tweetStrings = sampleTweets.map(function(x) {return x["text"];});
+          totalResults[topicName] = tweetStrings;
+          totalResultsAdded++;
+          if (totalResultsAdded === Math.min(numClusters, groupedTerms.length)) {
+            next(null, totalResults);
+          }
+        };
+        queryMultipleOrTerms(groupedTerms[i], retrieveGroupTweetsCallback);
       }
-
-      var query = {"text": {$in : regexArray}};
-      var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
-
-      UniqueTweet.aggregate(
-        [
-          {$match: query},
-          {$project: {_id: 1, text: 1}},
-          {$sample: {size: LARGE_QUERY_LIMIT}}
-        ],
-        function(err, sampleTweets) {
-          if (err) throw err;
-          var tweetStrings = sampleTweets.map(function(x) {return x["text"];});
-          next(null, tweetStrings);
-        }
-      );
     }
   ], function(err, result) {
     if (err) throw err;
@@ -803,6 +843,14 @@ router.get('/advSearch/:topic', function(req, res, next) {
     res.send(result);
   });
 });
+
+router.get('/topicClustersTweetRetrieval/', function(req, res, next) {
+  topicClustersTweetRetrieval(50, function(err, result) {
+    res.send(result);
+  });
+});
+
+
 
 router.get('/wordmap', function(req, res, next) {
   queryLotsOfTweets(res);
