@@ -40,8 +40,12 @@ router.get('/count', function(req, res, next) {
   queryServerStatus(res);
 });
 
-router.get('/config', function(req, res, next) {
+router.get('/configSet', function(req, res, next) {
   res.render('siteDataConfig', {siteData: JSON.stringify(siteData)});
+});
+
+router.get('/config', function(req, res, next) {
+  res.send(siteData);
 });
 
 // GET route for reading data
