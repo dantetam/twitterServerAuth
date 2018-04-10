@@ -14,24 +14,25 @@ frequencies of words) is sourced from
 https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-into-list-of-words#answer-11642687
 */
 
+//The file listed here must be in txt format, with a single word on each line,
+//and ordered from the top descending in frequency.
+var WORD_FREQ_FILE = "./routes/twitter/google-10000-english-usa.txt";
+
 var LOG_TOTAL_NUM_WORDS = Math.log(10000);
 
-//var MAX_WORD = 18;
-var MAX_WORD = 12; //Assume that tweets won't be using unnecessarily large words
-//Produce a few errors while greatly speeding up computation
+/**
+  * Assume that tweets won't be using unnecessarily large words
+  * Produce a few errors while greatly speeding up computation;
+  *this lessens the number of candidates to search (from i, search i - MAX_WORD : i).
+*/
+var MAX_WORD = 12; //18;
 
-var INACTIVE = -1;
+var INACTIVE = -1; //This is a static enum representing the existence of a path but not an actual word
+//For example, findWord("dar") = INACTIVE, but findWord("dark") = 0.02, and findWord("darkz") = undefined.
 
 var self = {
 
-  //_data: {
-    //Data here is structured in the form of nodes, {active: true/false, children: {}}
-    //The first children are all letters
-  //},
-
   addWord: function(word, rank) {
-    //self._maxWord = Math.max(word.length, self._maxWord);
-    //console.log(self._maxWord);
     if (word.length > MAX_WORD) return;
 
     var pointer = self._data;
@@ -99,6 +100,23 @@ var self = {
     */
   },
 
+  /**
+  Sourced from
+  https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-into-list-of-words#answer-11642687
+  originally in Python. As per the user's answer,
+
+  "The best way to proceed is to model the distribution of the output...
+  It is reasonable to assume that [word frequencies] follow Zipf's law,
+  that is the word with rank n...has probability roughly 1/(n log N),
+  where N is the number of words in the dictionary.
+
+  Once you have fixed the model, you can use dynamic programming to infer the position of the spaces.
+  The most likely sentence is the one that maximizes the product of the probability of each individual word,
+  ...[and use log space costs] to avoid overflows."
+
+  @param s Unspaced string to parse, with possible capital letters and special characters.
+  @return An array of tokens, the resulting separated words
+  */
   inferSpaces: function(s) {
     //Uses dynamic programming to infer the location of spaces in a string without spaces.
 
@@ -122,20 +140,6 @@ var self = {
           //TODO: efficiently stop computation if a word prefix is _entirely_ not found within the trie structure
           //Note that multiple distinctions need to be made:
           //nonexistent nodes ("darkz"), inactive nodes ("dar"), and active nodes ("dark").
-          /*
-          Note that words are processed in this order (in "nightnightknight"):
-
-          t 9999 -1
-          ht 9999 3.3189390950359563
-          ght 7.331025370631858 undefined
-          ight 9999 undefined
-          night 4.012086275595902 4.012086275595902
-          tnight 9999 undefined
-          htnight 9999 undefined
-          ghtnight 3.3189390950359563 undefined
-          ightnight 9999 undefined
-          nightnight 0 undefined
-          */
           continue;
         }
         if (cost[k] + self.getWordProb(s.substring(k, i)) < bestMatch[0] || bestMatch[1] === -1) {
@@ -143,10 +147,8 @@ var self = {
           bestMatch[1] = k+1;
         }
       }
-      //console.log("Found best match: " + bestMatch[1]);
       return bestMatch;
     }
-
 
     //Build the DP cost array
     var cost = [0];
@@ -166,7 +168,6 @@ var self = {
       i = k-1;
     }
     return out;
-    //return " ".join(reversed(out))
   },
 
   inferSpacesString: function(s) {
@@ -176,6 +177,6 @@ var self = {
 
 };
 
-self.readWordsFile("./routes/twitter/google-10000-english-usa.txt");
+self.readWordsFile(WORD_FREQ_FILE);
 
 module.exports = self;

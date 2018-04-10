@@ -1,3 +1,9 @@
+/**
+  * This file groups together many endpoints which interface with the Twitter API to retrieve material,
+  * including tweets, topics, and user timelines.
+  * This router also provides many methods to automate (repeat) data collection.
+  */
+
 var express = require('express');
 var async = require('async');
 var router = express.Router();

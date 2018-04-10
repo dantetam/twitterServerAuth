@@ -88,6 +88,10 @@ var self = module.exports = {
     );
   },
 
+  /**
+  An in-depth query into the full tweet database, which returns unique tweets, the database's length,
+  and the query size itself.
+  */
   queryDatabaseTweetsAndStats: function(query, callback) {
     var dataInclude = {authorPrettyName: 1, text: 1, creationTime: 1};
     async.waterfall([

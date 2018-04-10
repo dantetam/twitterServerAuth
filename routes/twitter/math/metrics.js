@@ -3,6 +3,7 @@ Mathematical metric functions for use in comparison, clustering, and other more 
 */
 
 var self = module.exports = {
+
   //Compute the overlap similiarity score of two possibly unequal length vectors
   overlapScore: function(vecA, vecB) {
     if (vecA.length === 0 || vecB.length === 0) return 0;
@@ -98,7 +99,7 @@ var self = module.exports = {
     for (var cluster of clusters) {
       var clusterWeight = 0;
       for (var item of cluster["points"]) {
-        clusterWeight += 1 / counts[item];
+        clusterWeight += 1 / counts[item]; //"Contribution" to the weighted average
       }
       result += clusterWeight * Math.log(clusterWeight);
     }

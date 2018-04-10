@@ -46,7 +46,12 @@ var self = module.exports = {
     }
   },
 
-  storeSingleTweetInData: function(status, next) {
+  /*
+  Take the JSON data of a single tweet and store it into the MongoDB database,
+  using the UniqueTweet schema defined in "/models/uniqueTweet.js".
+  Callback the database id, if newly created or already found.
+  */
+  storeSingleTweetInDataId: function(status, next) {
     var results = [];
 
     //Using the data gathered from status, store it in the MongoDB schema compactly
@@ -64,9 +69,9 @@ var self = module.exports = {
       tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
     }
 
-    Tweet.findOne({ 'idString': status["id_str"] }, function (err, result) {
+    UniqueTweet.findOne({ 'idString': status["id_str"] }, function (err, result) {
       if (result === null) { //Callback with the already existing tweet in the database
-        Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
+        UniqueTweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
           if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
             //Do not propogate errors
             next(null, null);
@@ -95,7 +100,7 @@ var self = module.exports = {
     var tweetIdCreations = [];
     for (let tweet of userTimelineJson) {
       let tweetIdCreationFunc = function(next) {
-        self.storeSingleTweetInData(tweet, next);
+        self.storeSingleTweetInDataId(tweet, next);
       };
       tweetIdCreations.push(tweetIdCreationFunc);
     }
@@ -120,21 +125,19 @@ var self = module.exports = {
           profileLinks: profileLinks.filter(function(x) {return x !== undefined;}),
           userTweetIds: tweetIds
         }
-        /*
         TwitterUser.findOne({ 'screenName': userObj["screen_name"] }, function (err, result) {
           if (result === null) {
-
-          }
-        });
-        */
-        TwitterUser.create(userData, function(err, twitterUser) {
-          if (err && callback) {
-            callback(err, null);
+            TwitterUser.create(userData, function(err, twitterUser) {
+              if (callback) {
+                callback(err, twitterUser);
+              }
+            });
           }
           else if (callback) {
-            callback(err, twitterUser);
+            callback(err, result);
           }
         });
+
       }
     );
   }
