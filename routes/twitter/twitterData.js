@@ -686,7 +686,7 @@ router.get('/advSearch/:topic', function(req, res, next) {
 });
 
 router.get('/clustersTweetSearch/', function(req, res, next) {
-  topicClustersTweetRetrieval(50, function(err, result) {
+  topicClustersTweetRetrieval(siteData.NUM_TEST_CLUSTERS_BUILT, function(err, result) {
     res.send(result);
   });
 });

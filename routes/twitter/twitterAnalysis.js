@@ -81,6 +81,7 @@ var self = module.exports = {
         continue;
       }
 
+      //Only keep alphanumeric input
       tokens[i] = tokens[i].replace(/[^a-z0-9]/g, " ");
       tokens[i] = tokens[i].replace(/[ ]/g, "");
       tokens[i] = tokens[i].replace(/\r?\n|\r/g, " ");
