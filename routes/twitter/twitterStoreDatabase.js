@@ -46,11 +46,12 @@ var self = module.exports = {
     }
   },
 
-  /**
-  Take a JSON tweet object _status_ and convert it into JSON which can be stored in the Tweet schema.
-  Look for the tweet if it exists, or create it. Send the new or existing Tweet database id ("_id") to the callback.
+  /*
+  Take the JSON data of a single tweet and store it into the MongoDB database,
+  using the UniqueTweet schema defined in "/models/uniqueTweet.js".
+  Callback the database id, if newly created or already found.
   */
-  storeSingleTweetInData: function(status, callback) {
+  storeSingleTweetInDataId: function(status, next) {
     var results = [];
 
     //Using the data gathered from status, store it in the MongoDB schema compactly
@@ -68,10 +69,10 @@ var self = module.exports = {
       tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
     }
 
-    Tweet.findOne({ 'idString': status["id_str"] }, function (err, result) {
+    UniqueTweet.findOne({ 'idString': status["id_str"] }, function (err, result) {
       if (result === null) { //Callback with the already existing tweet in the database
-        Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
-          if (err && callback) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
+        UniqueTweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
+          if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
             //Do not propogate errors
             callback(null, null);
           }
@@ -103,7 +104,7 @@ var self = module.exports = {
     var tweetIdCreations = [];
     for (let tweet of userTimelineJson) {
       let tweetIdCreationFunc = function(next) {
-        self.storeSingleTweetInData(tweet, next);
+        self.storeSingleTweetInDataId(tweet, next);
       };
       tweetIdCreations.push(tweetIdCreationFunc);
     }
@@ -129,7 +130,7 @@ var self = module.exports = {
           userTweetIds: tweetIds
         }
         TwitterUser.findOne({ 'screenName': userObj["screen_name"] }, function (err, result) {
-          if (result === null) { //Callback with the already existing tweet in the database
+          if (result === null) {
             TwitterUser.create(userData, function(err, twitterUser) {
               if (callback) {
                 callback(err, twitterUser);
@@ -140,6 +141,7 @@ var self = module.exports = {
             callback(null, result);
           }
         });
+
       }
     );
   }

@@ -49,12 +49,13 @@ var self = module.exports = {
       //return textUtil.camelCaseSeparate(group2);
       var numUpper = group2.length - group2.replace(/[A-Z]/g, '').length; //Syntax sugar for counting capital letters
       if (trieDictionary.findWord(group2) || trieDictionary.findWord(stemmer.stemWord(group2))) {
+        //If the word or its stemmed equivalent is an actual dictionary word
         return group2;
       }
-      if ((numUpper >= 1 && numUpper < 0.76 * group2.length) || group2.length <= 10) {
+      if ((numUpper >= 1 && numUpper < 0.76 * group2.length) || group2.length <= 10) { //Some capital letters, or a very short tag
         return textUtil.camelCaseSeparate(group2);
       }
-      else {
+      else { //Could not decipher, most likely requires inferred spaces
         var inferSpacesResult = trieWordFreq.inferSpacesString(group2);
         if (inferSpacesResult.length >= group2.length / 4) {
           return group2;
@@ -83,7 +84,6 @@ var self = module.exports = {
       tokens[i] = tokens[i].replace(/[^a-z0-9]/g, " ");
       tokens[i] = tokens[i].replace(/[ ]/g, "");
       tokens[i] = tokens[i].replace(/\r?\n|\r/g, " ");
-      //tokens[i] = tokens[i].trim();
       if (tokens[i].length === 0 || stopWordsDict[tokens[i]]) { //Transform the token to letters and again check to see if it is not a stop word
         tokens.splice(i, 1);
       }
@@ -91,6 +91,7 @@ var self = module.exports = {
     return tokens;
   },
 
+  //A very loose check to see if a tweet contains some little amount of recognizable English words
   tweetIsEnglish: function(tokens, cutoffProportionMin = 0.3) {
     if (tokens.length === 0) return true;
     var stopWordsDict = self.getStopWords();
@@ -117,7 +118,7 @@ var self = module.exports = {
     return results;
   },
 
-  wordAllowed: function(word) {
+  wordLongEnough: function(word) {
     return word.toLowerCase().replace(/[^a-z]/g, "").length > 2;
   },
 
@@ -216,7 +217,10 @@ var self = module.exports = {
     return self.sortDictIntoList(counts, 3);
   },
 
-
+  /**
+  Take in a two dimensional array of tokens and index them by word count,
+  discarding keys with counts less than _cutoffCount_.
+  */
   wordCountDict: function(doubleArrTokens, cutoffCount = 5) {
     var results = {};
     for (var i = 0; i < doubleArrTokens.length; i++) {
@@ -224,7 +228,7 @@ var self = module.exports = {
       for (var j = 0; j < listTokens.length; j++) {
         var token = listTokens[j];
         //token = stemmer.stemWord(token);
-        if (!self.wordAllowed(token)) {
+        if (!self.wordLongEnough(token)) {
           continue;
         }
         if (!(results.hasOwnProperty(token))) {

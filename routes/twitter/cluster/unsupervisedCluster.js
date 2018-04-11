@@ -62,17 +62,16 @@ var self = {
     return avgLinkage / (distMatrix.length * distMatrix[0].length / 2);
   },
 
-  testSentiment: function(doubleArrSentenceTokens) {
-    var callback = function(err, results) {console.log(results);}
-    vecLookup.sentenceGroupGetSentiment(doubleArrSentenceTokens, callback);
-  },
-
   /**
   Front facing methods for taking in processed tweets and returning the desired result:
   a series of cluster approximations;
   a minimum spanning tree using the sentence distance metrics above;
   or, a naive grouping by proper nouns (possibly the most effective).
   */
+  testSentiment: function(doubleArrSentenceTokens) {
+    var callback = function(err, results) {console.log(results);}
+    vecLookup.sentenceGroupGetSentiment(doubleArrSentenceTokens, callback);
+  },
   testCluster: function(doubleArrTokens, next) {
     var callback = function(err, sentenceVectors) {
       var clusters = self.approxCluster(sentenceVectors, metrics.sentenceSimilarity, function(x) {return x < DEFAULT_THRESHOLD_SIMILARITY;});
@@ -82,7 +81,6 @@ var self = {
     }
     vecLookup.sentenceGroupGetVectors(doubleArrTokens, callback);
   },
-
   testMst: function(doubleArrTokens, next) {
     var callback = function(err, sentenceVectors) {
       var clusters = self.mstSentenceVectors(sentenceVectors, metrics.sentenceSimilarity);
@@ -90,7 +88,6 @@ var self = {
     }
     vecLookup.sentenceGroupGetVectors(doubleArrTokens, callback);
   },
-
   testProperNounTopicGrouping: function(properNounTokens) {
     var results = self.approxCluster(properNounTokens, metrics.overlapScore, function(x) {return x > DEFAULT_TOPIC_MATCHING_LIMIT;});
     return results;

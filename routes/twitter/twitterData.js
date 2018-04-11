@@ -475,7 +475,9 @@ function queryTweetsPredict(queryString, inspectWord, beginDate, endDate, next) 
   });
 }
 
-
+/**
+Format a mongoose query/aggregate object using given parameters.
+*/
 function queryDataSearchParam(queryString, beginDate, endDate, response, outputMode) {
   var query = {};
   if (queryString && queryString.length > 0) query['text'] = new RegExp(queryString, 'i');

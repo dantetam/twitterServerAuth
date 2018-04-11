@@ -16,6 +16,10 @@ var self = {
     //The first children are all letters
   //},
 
+  /**
+   * Both the methods _addWord(word)_ and _findWord(word)_ use a traversal through the trie structure.
+   * trieWordFreq modifies the meaning of data slightly (see ./trieWordFreq.js) 
+  */
   addWord: function(word) {
     var pointer = self._data;
     for (var i = 0; i < word.length; i++) {
