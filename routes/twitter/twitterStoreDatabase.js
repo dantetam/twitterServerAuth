@@ -148,7 +148,7 @@ var self = module.exports = {
             });
           }
           else {
-            callback(null, result);
+            if (callback) callback(null, result);
           }
         });
 
