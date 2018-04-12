@@ -20,8 +20,6 @@ var UniqueTweet = require("../../models/twitterApi/uniqueTweet");
 var TwitterUser = require("../../models/twitterApi/twitterUser");
 var siteData = require("./storedTwitterConfig.js");
 
-var focusTopicsCountMax = 25;
-
 //This method is passed in the socket io communication objects
 //(initialized and retrieved upon connection within the main server).
 router.initConnectToSocket = function(socket, io) {
@@ -368,22 +366,22 @@ the user inputs a string topic that the server stores in a compiled list of topi
 router.put("/focus/:topic", function(req, res, next) {
   var userTopic = req.params["topic"];
   //res.send("request: PUT /focus/" + userTopic);
-  siteData["focusTopics"].splice(0, 0, userTopic);
-  if (siteData["focusTopics"].length > focusTopicsCountMax) {
-    siteData["focusTopics"].splice(siteData["focusTopics"].length - 1, 1);
+  siteData["FOCUS_TOPICS"].splice(0, 0, userTopic);
+  if (siteData["FOCUS_TOPICS"].length > siteData["FOCUS_TOPICS_COUNT_MAX"]) {
+    siteData["FOCUS_TOPICS"].splice(siteData["FOCUS_TOPICS"].length - 1, 1);
   }
-  res.send(siteData["focusTopics"]);
+  res.send(siteData["FOCUS_TOPICS"]);
 });
 
 
 router.delete("/focus/:topic", function(req, res, next) {
   var userTopic = req.params["topic"];
-  for (var i = 0; i < siteData["focusTopics"].length; i++) {
-    if (siteData["focusTopics"][i] === userTopic) {
-      siteData["focusTopics"].splice(i, 1);
+  for (var i = 0; i < siteData["FOCUS_TOPICS"].length; i++) {
+    if (siteData["FOCUS_TOPICS"][i] === userTopic) {
+      siteData["FOCUS_TOPICS"].splice(i, 1);
     }
   }
-  res.send(siteData["focusTopics"]);
+  res.send(siteData["FOCUS_TOPICS"]);
 });
 
 

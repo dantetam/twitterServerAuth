@@ -17,7 +17,7 @@ var self = module.exports = {
 
   connectToTweetData: function(next) {
     //connect to MongoDB, initiate callback onConnection, using new mongoDB 3.0 client syntax
-    MongoClient.connect(siteData.databaseUrl, function(err, client) {   //Return the mongoDB client obj
+    MongoClient.connect(siteData["DATABASE_URL"], function(err, client) {   //Return the mongoDB client obj
       //The client object encompasses the whole database
       if (err) throw err;
       next(null, client);
