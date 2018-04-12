@@ -84,7 +84,15 @@ var self = module.exports = {
         */
 
         tweetData["text"] = textUtil.removeRetweet(status["text"]);
-        UniqueTweet.create(tweetData, function(err, tweet) {});
+        UniqueTweet.create(tweetData, function(err, tweet) {
+          if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
+            //Do not propogate errors
+            next(null, null);
+          }
+          else if (next) {
+            next(null, tweet._id);
+          }
+        });
       }
       else {
         next(null, result._id);

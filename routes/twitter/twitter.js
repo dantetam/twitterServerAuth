@@ -434,8 +434,17 @@ router.get('/tweetAndUserLookup', function(req, res, next) {
       //Get random users from tweets and send to final response callback when done retrieving
       var numUsersToQuery = Math.min(retrievedTweets["statuses"].length, siteData.NUM_USERS_PER_FRAME);
       var userTimelineFuncs = [];
-      for (var i = 0; i < numUsersToQuery; i++) {
-        let userScreenName = retrievedTweets["statuses"][i]["user"]["screen_name"];
+      var currentlyUsedNames = {};
+      var tweetIndex = 0;
+      while (userTimelineFuncs.length < numUsersToQuery && tweetIndex < retrievedTweets["statuses"].length) {
+        let tweet = retrievedTweets["statuses"][tweetIndex];
+        let userScreenName = tweet["user"]["screen_name"];
+        if (currentlyUsedNames[userScreenName] === undefined) {
+          currentlyUsedNames[userScreenName] = true;
+        }
+        else {
+          continue;
+        }
         let userTimelineLookup = function(next) {
           getUserTimelineTweets(userScreenName, next);
         };
