@@ -100,14 +100,14 @@ var self = module.exports = {
       },
       function(client, next) { //Find a not random subsampling of tweets to show
         var dbase = client.db(siteData.TWITTER_SERVER_DATA_DIR_NAME);
-        dbase.collection("tweets").find(query, dataInclude).limit(siteData.DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
+        dbase.collection("uniquetweets").find(query, dataInclude).sort({creationTime:1}).limit(siteData.DEFAULT_QUERY_LIMIT).toArray(function(err, sampleTweets) {
           if (err) throw err;
           next(null, client, sampleTweets);
         });
       },
       function(client, sampleTweets, next) {
         var dbase = client.db(siteData.TWITTER_SERVER_DATA_DIR_NAME);
-        dbase.collection("tweets").find(query, dataInclude).toArray(function(err, result) {
+        dbase.collection("uniquetweets").find(query, dataInclude).sort({creationTime:1}).toArray(function(err, result) {
           if (err) throw err;
           client.close();
           var queryCount = result.length;

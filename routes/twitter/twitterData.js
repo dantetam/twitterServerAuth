@@ -498,6 +498,7 @@ with an option for text.
 function queryData(query, response, outputMode) {
   async.waterfall([
     function(next) {
+      //twitterQuery.aggregateBasic(query, siteData.LARGE_QUERY_LIMIT, next);
       twitterQuery.queryDatabaseTweetsAndStats(query, next);
     }
   ], function(err, sampleTweets, queryCount, totalCount) {
@@ -528,7 +529,7 @@ function queryLotsOfTweets(response) {
     },
     function(client, next) { //Find a not random subsampling of tweets to show
       var dbase = client.db(siteData.TWITTER_SERVER_DATA_DIR_NAME);
-      dbase.collection("tweets").find(query, dataInclude).limit(siteData.LARGE_QUERY_LIMIT).toArray(function(err, sampleTweets) {
+      dbase.collection("uniquetweets").find(query, dataInclude).limit(siteData.LARGE_QUERY_LIMIT).toArray(function(err, sampleTweets) {
         if (err) throw err;
         client.close();
         next(null, sampleTweets);
@@ -703,7 +704,7 @@ router.get('/wordmap', function(req, res, next) {
 router.get('/recent', function(req, res, next) {
   var currentDate = new Date();
   var previousDate = new Date();
-  previousDate.setHours(currentDate.getHours() - 24);
+  previousDate.setHours(currentDate.getHours() - 72);
 
   var jsonMode = req.query.output;
 
@@ -715,7 +716,7 @@ router.get('/recent', function(req, res, next) {
 router.get('/recentmst', function(req, res, next) {
   var currentDate = new Date();
   var previousDate = new Date();
-  previousDate.setHours(currentDate.getHours() - 24);
+  previousDate.setHours(currentDate.getHours() - 72);
 
   queryTweetsMst("", previousDate.toJSON(), currentDate.toJSON(), res);
   //res.send("Twitter data test query custom: " + userTopic);
@@ -725,7 +726,7 @@ router.get('/recentmst', function(req, res, next) {
 router.get('/recentcluster', function(req, res, next) {
   var currentDate = new Date();
   var previousDate = new Date();
-  previousDate.setHours(currentDate.getHours() - 24);
+  previousDate.setHours(currentDate.getHours() - 72);
 
   queryTweetsCluster("", previousDate.toJSON(), currentDate.toJSON(), res);
   //res.send("Twitter data test query custom: " + userTopic);
@@ -738,7 +739,7 @@ router.get('/recentsentiment', function(req, res, next) {
 
   var currentDate = new Date();
   var previousDate = new Date();
-  previousDate.setHours(currentDate.getHours() - 24);
+  previousDate.setHours(currentDate.getHours() - 72);
 
   var firstCallback = function(err, result) {
     //This sends the word counts to the client, which are rendered by d3.js in the browser.
@@ -752,7 +753,7 @@ router.get('/recentsentiment', function(req, res, next) {
 router.get('/topicgroups', function(req, res, next) {
   var currentDate = new Date();
   var previousDate = new Date();
-  previousDate.setHours(currentDate.getHours() - 24);
+  previousDate.setHours(currentDate.getHours() - 72);
 
   queryTweetsTopicGrouping(previousDate.toJSON(), currentDate.toJSON(), res);
 });

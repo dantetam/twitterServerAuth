@@ -9,7 +9,7 @@ var siteData = {
   TOPIC_SEARCH_API_CACHE: [], //The most recently processed topics, starting with the most recent in front (0 index)
   TOPIC_FRAME_NUM: 0, //A counter to keep track of how many updates a topic list has been used for
   TOPIC_FRAME_GET_NEW: 12, //The frame at which to discard cached Twitter API results and retrieve new ones
-  NUM_USERS_PER_FRAME: 5, //Number of users to query every user endpoint frame
+  NUM_USERS_PER_FRAME: 12, //Number of users to query every user endpoint frame
 
   NUM_TEST_CLUSTERS_BUILT: 50,
 
