@@ -7,7 +7,6 @@ var async = require('async');
 var mongoose = require('mongoose');
 var MongoClient = require('mongodb').MongoClient;
 
-var Tweet = require("../../models/twitterApi/tweet");
 var UniqueTweet = require("../../models/twitterApi/uniqueTweet");
 var TwitterUser = require("../../models/twitterApi/twitterUser");
 

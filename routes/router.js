@@ -5,14 +5,14 @@ var async = require('async');
 
 var websiteRequest = require("./website-search/websiteRequest.js");
 
-var Tweet = require('../models/twitterApi/tweet');
+var UniqueTweet = require('../models/twitterApi/uniqueTweet');
 var WebPage = require("../models/loginAuth/webpage");
 var Website = require("../models/loginAuth/website");
 
 var siteData = require("./twitter/storedTwitterConfig.js");
 
 function getServerStatus(next) {
-  Tweet.count({}, function (err, count) {
+  UniqueTweet.count({}, function (err, count) {
     if (err) {}
     next(null, count);
   });

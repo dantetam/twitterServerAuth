@@ -5,7 +5,6 @@ var mongoose = require('mongoose');
 var MongoClient = require('mongodb').MongoClient;
 
 var twitterAnalysis = require('./twitterAnalysis.js');
-var Tweet = require("../../models/twitterApi/tweet");
 var UniqueTweet = require("../../models/twitterApi/uniqueTweet");
 var TwitterUser = require("../../models/twitterApi/twitterUser");
 var cluster = require('./cluster/unsupervisedCluster.js');
@@ -26,7 +25,7 @@ function queryTweetsFromIdList(tweetDataIdList, next) {
   var mongooseObjectIds = tweetDataIdList.map(function(idString) {
     return mongoose.Types.ObjectId(idString);
   });
-  Tweet.find({
+  UniqueTweet.find({
     '_id': {$in: mongooseObjectIds}
   }, function(err, tweets) {
     next(err, tweets)

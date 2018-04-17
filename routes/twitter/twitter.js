@@ -15,7 +15,6 @@ var twitterAnalysis = require('./twitterAnalysis.js');
 var twitterStoreUtil = require('./twitterStoreDatabase.js');
 var cluster = require('./cluster/unsupervisedCluster.js');
 
-var Tweet = require("../../models/twitterApi/tweet");
 var UniqueTweet = require("../../models/twitterApi/uniqueTweet");
 var TwitterUser = require("../../models/twitterApi/twitterUser");
 var siteData = require("./storedTwitterConfig.js");

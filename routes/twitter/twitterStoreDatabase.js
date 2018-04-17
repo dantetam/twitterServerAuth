@@ -7,7 +7,6 @@ var async = require("async");
 
 var textUtil = require("./textanalysis/textUtil.js");
 
-var Tweet = require("../../models/twitterApi/tweet");
 var UniqueTweet = require("../../models/twitterApi/uniqueTweet");
 var TwitterUser = require("../../models/twitterApi/twitterUser");
 
@@ -36,8 +35,6 @@ var self = module.exports = {
       if (status["entities"]["urls"] !== undefined) {
         tweetData.urlLinks = status["entities"]["urls"].map(function(urlEntry) {return urlEntry["url"];});
       }
-      //Tweet.create(tweetData, function(err, tweet) {}); //Create this entry if it does not exist
-
       //Unique tweets (i.e. without retweets) are stored again, and are unique,
       //such that user2: RT @user1: ..., user3: RT @user1: ...
       //are considered the same and stored only once.
@@ -71,18 +68,6 @@ var self = module.exports = {
 
     UniqueTweet.findOne({ 'idString': status["id_str"] }, function (err, result) {
       if (result === null) { //Callback with the already existing tweet in the database
-        /*
-        Tweet.create(tweetData, function (err, tweet) { //Create this entry if it does not exist
-          if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
-            //Do not propogate errors
-            next(null, null);
-          }
-          else if (next) {
-            next(null, tweet._id);
-          }
-        });
-        */
-
         tweetData["text"] = textUtil.removeRetweet(status["text"]);
         UniqueTweet.create(tweetData, function(err, tweet) {
           if (err && next) { //Tweet creation not successful, but we should indicate that the tweet storing process has been finished
