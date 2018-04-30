@@ -15,7 +15,13 @@ Starting a Server
 
 /* Start the Node.js server */
 npm start
+
+/* Visit localhost:3000/ in dev environment, or use production host and port. */
 ```
+
+I recommend mLab for having an online MongoDB instance, with its own special URL.  
+Note that tweets are relatively compact, and the average tweet consumes ~370-400B of data.
+A set of a million tweets consumes 340 MB, with a MongoDB index around 150 MB large.
 
 Citations and Attributions
 -------
@@ -24,6 +30,10 @@ Citations and Attributions
 2. Mikolov et al. (2013). Distributed Representations of Words and Phrases and their Compositionality. Google. Mountain View, CA, Oct 2013.
 
 3. Pak, Paroubek. Twitter as a Corpus for Sentiment Analysis and Opinion Mining. Universit ́e de Paris-Sud, Laboratoire LIMSI-CNRS. 2011. &lt; http://web.archive.org/web/20111119181304/http://deepthoughtinc.com/wp-content/uploads/2011/01/Twitter-as-a-Corpus-for-Sentiment-Analysis-and-Opinion-Mining.pdf &gt;
+
+4. Aggarwal, C. C., & Zhai, C. (2012). A Survey of Text Clustering Algorithms. IBM T. J. Watson Research Center. Yorktown Heights, USA, 2012. &lt; https://pdfs.semanticscholar.org/88c2/5e2481ba49cbac75575485cba1759fa4ebcc.pdf &gt;
+
+5. Pagliardini, M., Gupta, P., Jaggi, M. (2017). Unsupervised Learning of Sentence Embeddings using Compositional n-Gram Features. Jul 2017. &lt; https://arxiv.org/abs/1703.02507 &gt;
 
 Footnotes
 -------
