@@ -7,8 +7,18 @@ The index of this server lists all of the endpoints used for analysis, visualiza
 This server creates a RESTful API by using the Twitter Search/Topic APIs to find tweet content, and delivers results using server-side NLP computations. Tweets, results, and other data are stored within the Mongoose database, and can be efficiently queried by the server. Moreover, this server uses async IO/callbacks to deliver results quickly.
 
 
+Research & Innovation
+-----------------
+
+The Twitter database is a large stream of human information with valuable natural language processing applications. In this project, I explored computer language featurizations (using word2vec, sentiment vectors, and other interpretations of language) and clustering algorithms (mainly hierarchical clustering, established and my own creative approach), to develop and analyze political and sociological trends within the larger Twitter community. 
+
+I sought to provide these insights in real time through a node.js full stack website, that could be easily deployed across multiple machines. Also, I wanted to provide real-world applicable results and queries: the link between a user's history of tweets and the same user's sentiment towards a topic; a particular group's focus of words given a certain topic; and so on.
+
+
 Starting a Server
 -----------------
+
+Note that you need to register with Twitter's Developer API for your own API keys. This project only handles standard (free) search across recent tweets.
 
 ```
 /* Create a MongoDB instance at 'mongodb://localhost/twitterServer' */
