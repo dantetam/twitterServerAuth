@@ -10,7 +10,7 @@ One of the greatest insights is that the distance function used, defines the way
 data tends to cluster, as well as the relationships between groups of data, and what comprises
 those groups of data.
 
-See approxCluster(...); for the approximated, more efficient clustering algorithm.
+See approxClusterDistDensity(...); for the approximated, more efficient clustering algorithm.
 Basic vector similiarity functions are used as a proof of concept.
 More sophisticated measures, such as latent vector representation,
 are done offline.
@@ -74,7 +74,7 @@ var self = {
   },
   testCluster: function(doubleArrTokens, next) {
     var callback = function(err, sentenceVectors) {
-      var clusters = self.approxCluster(sentenceVectors, metrics.sentenceSimilarity, function(x) {return x < DEFAULT_THRESHOLD_SIMILARITY;});
+      var clusters = self.approxClusterDistDensity(sentenceVectors, metrics.sentenceSimilarity, function(x) {return x < DEFAULT_THRESHOLD_SIMILARITY;});
       var diversity = metrics.modifiedShannonIndex(clusters);
       console.log("Shannon Diversity Index: " + diversity);
       if (next) next(null, clusters);
@@ -89,7 +89,7 @@ var self = {
     vecLookup.sentenceGroupGetVectors(doubleArrTokens, callback);
   },
   testProperNounTopicGrouping: function(properNounTokens) {
-    var results = self.approxCluster(properNounTokens, metrics.overlapScore, function(x) {return x > DEFAULT_TOPIC_MATCHING_LIMIT;});
+    var results = self.approxClusterDistDensity(properNounTokens, metrics.overlapScore, function(x) {return x > DEFAULT_TOPIC_MATCHING_LIMIT;});
     return results;
   },
 
@@ -103,7 +103,7 @@ var self = {
   @param metric A function which takes in two vectors and returns some kind of distance
   @param similiarityLimitFunc A function which returns true or false on a numbered condition (like > 0.3)
   */
-  approxCluster: function(sentenceVectors, metric, similiarityLimitFunc) {
+  approxClusterDistDensity: function(sentenceVectors, metric, similiarityLimitFunc) {
     var visited = {}; //Pick some initial cluster centroids to start with
     var n = sentenceVectors.length; //Number of points
 
@@ -198,17 +198,22 @@ var self = {
     return clusters;
   },
 
-  //Construct a minimum spanning tree of sentence vectors using a custom distance metric.
+  //Construct a minimum spanning tree through Kruskal's algorithm of sentence vectors using a custom distance metric.
   mstSentenceVectors: function(sentenceVectors, metric) {
+    var distMatrix = self.getVecDistMatrix(sentenceVectors, metric);
+    return self._computeMstFromDistMatrix(distMatrix);
+  },
+
+  //Return an MST with edges greater than length _edgeUpperBound_ removed.
+  _computeMstFromDistMatrix: function(distMatrix, edgeUpperBound = undefined) {
     var visited = {};
     var n = sentenceVectors.length; //Number of points
 
-    var distMatrix = self.getVecDistMatrix(sentenceVectors, metric);
     var arrEdges = [];
     for (let i = 0; i < n; i++) {
       for (let j = i; j < n; j++) {
         if (i === j) continue;
-        arrEdges.push({i: i, j: j, edge: distMatrix[i][j]});
+        arrEdges.push({i: i, j: j, edgeLength: distMatrix[i][j]});
       }
     }
 
@@ -220,10 +225,9 @@ var self = {
 
     while (result.length < n + 1 && arrEdges.length > 0) {
       var firstEdge = arrEdges.splice(0, 1)[0];
-      //console.log(result);
+      if (edgeUpperBound && firstEdge.edgeLength > edgeUpperBound) break;
       var i = firstEdge["i"], j = firstEdge["j"];
       if (visited[i] === undefined || visited[j] === undefined) {
-        //console.log(firstEdge);
         visited[i] = true;
         visited[j] = true;
         result.push([i, j]);
@@ -231,7 +235,7 @@ var self = {
     }
 
     return result;
-  },
+  }
 
   //Return the set intersection and intersection length of two arrays
   getMatch: function(arrA, arrB) {

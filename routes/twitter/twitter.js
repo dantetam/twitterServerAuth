@@ -105,6 +105,7 @@ function getUserTimeline(bearerToken, screenName, next) {
     },
     json: true
   }, function(err, jsonResponse, body) {
+    if (!jsonResponse) return;
     if (jsonResponse["errors"]) {
       console.log(jsonResponse["errors"]);
     }
