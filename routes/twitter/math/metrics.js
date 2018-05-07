@@ -4,7 +4,8 @@ Mathematical metric functions for use in comparison, clustering, and other more 
 
 var self = module.exports = {
 
-  //Compute the overlap similiarity score of two possibly unequal length vectors
+  //Compute the overlap similiarity score of two possibly unequal length vectors.
+  //This function has a range of [0, 1].
   overlapScore: function(vecA, vecB) {
     if (vecA.length === 0 || vecB.length === 0) return 0;
     var overlap = {};

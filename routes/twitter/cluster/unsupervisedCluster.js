@@ -198,14 +198,19 @@ var self = {
     return clusters;
   },
 
+  approxClusterIncompleteMST: function(properNounTokens) {
+    var distMatrix = self.getVecDistMatrix(properNounTokens, metrics.overlapScore);
+    return self._computeMstFromDistMatrix(distMatrix, 0.2);
+  },
+
   //Construct a minimum spanning tree through Kruskal's algorithm of sentence vectors using a custom distance metric.
   mstSentenceVectors: function(sentenceVectors, metric) {
     var distMatrix = self.getVecDistMatrix(sentenceVectors, metric);
     return self._computeMstFromDistMatrix(distMatrix);
   },
 
-  //Return an MST with edges greater than length _edgeUpperBound_ removed.
-  _computeMstFromDistMatrix: function(distMatrix, edgeUpperBound = undefined) {
+  //Return an MST with edges greater than length _edgeLowerBound_ removed.
+  _computeMstFromDistMatrix: function(distMatrix, edgeLowerBound = undefined) {
     var visited = {};
     var n = sentenceVectors.length; //Number of points
 
@@ -217,15 +222,15 @@ var self = {
       }
     }
 
-    arrEdges.sort(function(a, b) {
-      return a.edge - b.edge;
+    arrEdges.sort(function(a, b) { //Descending sort
+      return b.edge - a.edge;
     });
 
     var result = [];
 
     while (result.length < n + 1 && arrEdges.length > 0) {
       var firstEdge = arrEdges.splice(0, 1)[0];
-      if (edgeUpperBound && firstEdge.edgeLength > edgeUpperBound) break;
+      if (edgeLowerBound && firstEdge.edgeLength <= edgeLowerBound) break; //Separate parts of the MST optimally to create clusters
       var i = firstEdge["i"], j = firstEdge["j"];
       if (visited[i] === undefined || visited[j] === undefined) {
         visited[i] = true;
