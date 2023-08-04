@@ -1,31 +1,42 @@
 {
-  "name": "TwitterServer",
+  "name": "twitterserver",
   "version": "1.0.0",
   "main": "app.js",
-  "repository": "https://github.com/dantetam/twitterServerAuth",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dantetam/twitterServerAuth.git"
+  },
   "author": "Dante Tam",
-  "license": "none",
+  "license": "UNLICENSED",
   "scripts": {
-    "start": "node app",
+    "start": "node --max-old-space-size=8192 app",
     "watch": "nodemon app && mongod"
   },
   "dependencies": {
     "async": "^2.6.0",
-    "bcrypt": "^1.0.3",
+    "bcrypt": "^5.0.0",
     "body-parser": "^1.18.2",
-    "connect-mongo": "^1.3.2",
+    "connect-mongo": "^3.2.0",
     "d3": "^4.13.0",
     "d3-random": "^1.1.0",
     "express": "^4.16.3",
     "express-session": "^1.15.6",
     "jade": "^1.11.0",
-    "mongoose": "^4.13.12",
+    "mongoose": "^5.11.8",
     "mongoose-random": "^0.1.1",
     "natural": "^0.5.6",
     "nodemon": "^1.17.2",
     "pug": "^2.0.3",
     "repeat": "0.0.6",
+    "request": "^2.88.2",
     "socket.io": "^2.0.4",
-    "textract": "^2.2.0"
-  }
+    "textract": "^2.5.0"
+  },
+  "description": "Twitter NLP Server\r ============\r This is a node.js RESTful API served by express.js middleware, pug/jade templates, and a MongoDB/Mongoose schema and database.",
+  "bugs": {
+    "url": "https://github.com/dantetam/twitterServerAuth/issues"
+  },
+  "homepage": "https://github.com/dantetam/twitterServerAuth#readme",
+  "devDependencies": {},
+  "keywords": []
 }

@@ -240,7 +240,7 @@ var self = {
     }
 
     return result;
-  }
+  },
 
   //Return the set intersection and intersection length of two arrays
   getMatch: function(arrA, arrB) {
